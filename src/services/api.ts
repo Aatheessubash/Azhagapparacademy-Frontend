@@ -8,7 +8,8 @@ import axios from 'axios';
 type ApiPayload = Record<string, unknown>;
 
 // API base URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL =
+  import.meta.env.VITE_API_URL || 'https://azhagapparacademy-backend.onrender.com/api';
 
 // Create axios instance
 const api = axios.create({
