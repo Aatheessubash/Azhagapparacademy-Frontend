@@ -1,0 +1,593 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+.wsp-page {
+  --wsp-bg: #f4f7fd;
+  --wsp-surface: #ffffff;
+  --wsp-surface-soft: #f7f9ff;
+  --wsp-text: #0e172f;
+  --wsp-muted: #5a6785;
+  --wsp-line: #dce3f4;
+  --wsp-blue: #2563eb;
+  --wsp-blue-strong: #1d4ed8;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  color: var(--wsp-text);
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(37, 99, 235, 0.14), transparent 38%),
+    radial-gradient(circle at 95% 30%, rgba(99, 102, 241, 0.13), transparent 43%),
+    linear-gradient(180deg, #f5f8ff 0%, #ffffff 50%, #f5f8ff 100%);
+}
+
+.wsp-grid-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(20, 33, 74, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 33, 74, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 82%);
+}
+
+.wsp-shell {
+  width: min(1140px, 100%);
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.wsp-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(220, 227, 244, 0.95);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(8px);
+}
+
+.wsp-brand {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.72rem;
+  text-align: left;
+}
+
+.wsp-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid #ccd8f5;
+  background: #fff;
+  padding: 2px;
+}
+
+.wsp-brand-title,
+.wsp-hero h1,
+.wsp-programs h2,
+.wsp-program-card h3,
+.wsp-contact h2 {
+  font-family: 'Space Grotesk', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.wsp-brand-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #102048;
+}
+
+.wsp-brand-sub {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: #65708f;
+  font-weight: 500;
+}
+
+.wsp-links {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.wsp-links a {
+  text-decoration: none;
+  color: #3d4b6e;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.wsp-links a:hover {
+  color: var(--wsp-blue);
+}
+
+.wsp-nav-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wsp-btn {
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+.wsp-btn-primary {
+  border: 1px solid transparent;
+  color: #fff;
+  background: linear-gradient(135deg, var(--wsp-blue) 0%, var(--wsp-blue-strong) 100%);
+}
+
+.wsp-btn-primary:hover {
+  background: linear-gradient(135deg, #2f6ef0 0%, #2659d8 100%);
+}
+
+.wsp-btn-outline {
+  border: 1px solid #88a5eb;
+  color: #1f52c3;
+  background: #ecf3ff;
+}
+
+.wsp-btn-outline:hover {
+  background: #deebff;
+}
+
+.wsp-main {
+  margin-top: 1rem;
+}
+
+.wsp-hero,
+.wsp-preview,
+.wsp-social,
+.wsp-programs,
+.wsp-contact {
+  border: 1px solid var(--wsp-line);
+  border-radius: 24px;
+  background: var(--wsp-surface);
+  box-shadow: 0 16px 38px rgba(16, 27, 62, 0.08);
+}
+
+.wsp-hero {
+  text-align: center;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 2.2vw, 2.2rem);
+}
+
+.wsp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid #ccdaf8;
+  background: #eff4ff;
+  color: #2c519d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.42rem 0.8rem;
+}
+
+.wsp-hero h1 {
+  margin: 1rem auto 0;
+  max-width: 18ch;
+  line-height: 1.04;
+  font-size: clamp(2rem, 5vw, 3.9rem);
+  color: #111e3f;
+}
+
+.wsp-hero p {
+  margin: 0.9rem auto 0;
+  max-width: 54ch;
+  color: var(--wsp-muted);
+  line-height: 1.6;
+  font-size: clamp(0.95rem, 1.9vw, 1.08rem);
+}
+
+.wsp-hero-actions {
+  margin: 1.2rem auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wsp-note {
+  margin-top: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  color: #536188;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.wsp-preview,
+.wsp-social,
+.wsp-programs,
+.wsp-contact,
+.wsp-footer {
+  margin-top: 0.95rem;
+}
+
+.wsp-preview {
+  padding: 0.95rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.62rem;
+}
+
+.wsp-card,
+.wsp-metric-card,
+.wsp-program-card {
+  border: 1px solid var(--wsp-line);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.wsp-card {
+  padding: 0.8rem;
+}
+
+.wsp-card-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #364467;
+}
+
+.wsp-focus-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+}
+
+.wsp-focus-list {
+  list-style: none;
+  margin: 0.68rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.wsp-focus-list li {
+  position: relative;
+  padding-left: 1rem;
+  color: #4a5c82;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.wsp-focus-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #2a56c7;
+}
+
+.wsp-plan-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9ff 100%);
+}
+
+.wsp-mini-track {
+  margin-top: 0.62rem;
+}
+
+.wsp-mini-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #46567a;
+  font-size: 0.8rem;
+}
+
+.wsp-mini-head strong {
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.wsp-mini-rail {
+  margin-top: 0.35rem;
+  height: 7px;
+  border-radius: 999px;
+  background: #d9e2f8;
+  overflow: hidden;
+}
+
+.wsp-mini-rail span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--wsp-blue) 0%, var(--wsp-blue-strong) 100%);
+}
+
+.wsp-center-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #ebf1ff 0%, #ffffff 100%);
+}
+
+.wsp-center-card img {
+  width: 100%;
+  max-width: 165px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid #d1dcf8;
+  padding: 4px;
+  background: #fff;
+}
+
+.wsp-center-chip {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0.55rem;
+  border-radius: 999px;
+  padding: 0.34rem 0.64rem;
+  border: 1px solid #d3defa;
+  background: #fff;
+  color: #37517e;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wsp-metric-card {
+  grid-column: 1 / 4;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.8rem 0.9rem;
+  background: linear-gradient(90deg, #eef5ff 0%, #f7faff 100%);
+}
+
+.wsp-metric-card span {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #2a56c7;
+}
+
+.wsp-metric-card p {
+  margin: 0;
+  color: #4f5f83;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.wsp-social {
+  text-align: center;
+  padding: 1rem;
+}
+
+.wsp-social p {
+  margin: 0;
+  color: #4f5f83;
+  font-size: 0.92rem;
+}
+
+.wsp-social-row {
+  margin-top: 0.72rem;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.wsp-social-link {
+  border-radius: 10px;
+  border: 1px solid #d8e1f5;
+  background: #f8faff;
+  color: #32476f;
+  padding: 0.48rem 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.wsp-social-link:hover {
+  border-color: #9bb4f0;
+  color: #214db8;
+  background: #edf3ff;
+  transform: translateY(-1px);
+}
+
+.wsp-programs {
+  padding: 1rem;
+}
+
+.wsp-programs h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  text-align: center;
+  color: #101f45;
+}
+
+.wsp-programs > p {
+  margin: 0.45rem auto 0;
+  max-width: 54ch;
+  text-align: center;
+  color: #5a6785;
+}
+
+.wsp-program-grid {
+  margin-top: 0.86rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
+.wsp-program-card {
+  padding: 0.85rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wsp-program-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 28px rgba(13, 25, 56, 0.12);
+}
+
+.wsp-program-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #12234b;
+}
+
+.wsp-program-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.72rem 0 0;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.wsp-program-card li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.36rem;
+  color: #4b5b7f;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.wsp-program-card li svg {
+  color: #2760e2;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.wsp-contact {
+  padding: 1rem;
+  text-align: center;
+  background:
+    radial-gradient(circle at 90% 20%, rgba(37, 99, 235, 0.12), transparent 38%),
+    linear-gradient(140deg, #f2f7ff 0%, #ffffff 70%);
+}
+
+.wsp-contact h2 {
+  margin: 0;
+  font-size: clamp(1.45rem, 3.1vw, 2rem);
+  color: #13244e;
+}
+
+.wsp-contact p {
+  margin: 0.45rem auto 0;
+  max-width: 56ch;
+  color: #556386;
+}
+
+.wsp-contact-actions {
+  margin-top: 0.82rem;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wsp-footer {
+  text-align: center;
+  padding: 0.35rem 0 1rem;
+}
+
+.wsp-footer p {
+  margin: 0;
+  color: #5f6e92;
+  font-size: 0.78rem;
+}
+
+.wsp-rise {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: wsp-rise 0.64s ease forwards;
+}
+
+@keyframes wsp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 980px) {
+  .wsp-links {
+    display: none;
+  }
+
+  .wsp-social-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wsp-program-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .wsp-shell {
+    padding: 0.72rem 0.68rem 1.4rem;
+  }
+
+  .wsp-nav {
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 14px;
+  }
+
+  .wsp-brand {
+    justify-content: center;
+  }
+
+  .wsp-nav-actions {
+    width: 100%;
+  }
+
+  .wsp-nav-actions button {
+    flex: 1;
+  }
+
+  .wsp-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .wsp-metric-card {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .wsp-social-row,
+  .wsp-program-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wsp-contact-actions a {
+    width: 100%;
+  }
+
+  .wsp-contact-actions button {
+    width: 100%;
+  }
+}
