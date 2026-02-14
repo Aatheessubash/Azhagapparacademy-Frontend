@@ -284,7 +284,7 @@ const AdminLevels: React.FC = () => {
 
                     {/* Video Status */}
                     <div className="flex items-center gap-4">
-                      {level.videoPath ? (
+                      {level.videoPath && level.videoPath !== 'pending' ? (
                         <div className="flex items-center gap-2 text-green-600">
                           <CheckCircle className="w-5 h-5" />
                           <span className="text-sm">Video uploaded</span>
@@ -310,7 +310,7 @@ const AdminLevels: React.FC = () => {
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openVideoDialog(level)}>
                             <Video className="w-4 h-4 mr-2" />
-                            {level.videoPath ? 'Replace Video' : 'Upload Video'}
+                            {level.videoPath && level.videoPath !== 'pending' ? 'Replace Video' : 'Upload Video'}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/admin/levels/${level._id}/quiz`)}>
                             <Layers className="w-4 h-4 mr-2" />

@@ -7,9 +7,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { courseAPI, progressAPI } from '../services/api';
-import { resolveMediaUrl } from '@/lib/media';
 import { formatINR } from '@/lib/currency';
 import academyLogo from '../logo.jpg';
+import MediaImage from '@/components/MediaImage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -287,17 +287,16 @@ const StudentDashboard: React.FC = () => {
               <Card key={course._id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 {/* Course Thumbnail */}
                 <div className="h-40 bg-gradient-to-br from-blue-500 to-indigo-600 relative">
-                  {course.thumbnail ? (
-                    <img 
-                      src={resolveMediaUrl(course.thumbnail)} 
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
+                  <MediaImage
+                    src={course.thumbnail}
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                    fallback={
                     <div className="w-full h-full flex items-center justify-center">
                       <BookOpen className="w-16 h-16 text-white/50" />
                     </div>
-                  )}
+                    }
+                  />
                   
                   {/* Status Badge */}
                   <div className="absolute top-3 right-3">

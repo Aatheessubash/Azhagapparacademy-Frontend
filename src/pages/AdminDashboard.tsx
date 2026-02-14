@@ -7,8 +7,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { adminAPI, courseAPI } from '../services/api';
-import { resolveMediaUrl } from '@/lib/media';
 import { formatINR } from '@/lib/currency';
+import MediaImage from '@/components/MediaImage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,7 @@ import {
 import { 
   Users, 
   BookOpen, 
-  DollarSign,
+  IndianRupee,
   Clock,
   CheckCircle,
   XCircle,
@@ -315,7 +315,7 @@ const AdminDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
-                <DollarSign className="w-8 h-8 text-purple-600 mr-3" />
+                <IndianRupee className="w-8 h-8 text-purple-600 mr-3" />
                 <div>
                   <p className="text-2xl font-bold">{formatINR(stats?.totalRevenue)}</p>
                   <p className="text-sm text-gray-500">From approved payments</p>
@@ -387,10 +387,15 @@ const AdminDashboard: React.FC = () => {
             {selectedCourse?.qrCodeImage && (
               <div className="mt-4">
                 <p className="text-sm text-gray-600 mb-2">Current QR Preview</p>
-                <img
-                  src={resolveMediaUrl(selectedCourse.qrCodeImage)}
+                <MediaImage
+                  src={selectedCourse.qrCodeImage}
                   alt={`${selectedCourse.title} QR`}
                   className="w-28 h-28 object-contain border rounded-md bg-white"
+                  fallback={
+                    <div className="w-28 h-28 flex items-center justify-center border rounded-md bg-gray-50 text-sm text-gray-500">
+                      QR not available
+                    </div>
+                  }
                 />
               </div>
             )}

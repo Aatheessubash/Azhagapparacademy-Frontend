@@ -44,7 +44,7 @@ interface Level {
 }
 
 interface CourseLevel extends Level {
-  videoPath: string;
+  videoPath?: string | null;
 }
 
 const VideoLearning: React.FC = () => {
@@ -65,6 +65,7 @@ const VideoLearning: React.FC = () => {
   const [volume, setVolume] = useState(1);
   const [showQuizDialog, setShowQuizDialog] = useState(false);
   const [hasQuiz, setHasQuiz] = useState(false);
+  const [videoLoadFailed, setVideoLoadFailed] = useState(false);
   const [tabSwitchWarning, setTabSwitchWarning] = useState(false);
   const [securityWarning, setSecurityWarning] = useState<string | null>(null);
   const [watermarkPosition, setWatermarkPosition] = useState({ x: 20, y: 20 });
@@ -145,6 +146,7 @@ const VideoLearning: React.FC = () => {
 
       try {
         setIsLoading(true);
+        setVideoLoadFailed(false);
         const [levelRes, levelsRes] = await Promise.all([
           levelAPI.getById(levelId),
           levelAPI.getByCourse(courseId)
@@ -171,6 +173,11 @@ const VideoLearning: React.FC = () => {
 
     fetchLevelData();
   }, [courseId, levelId]);
+
+  useEffect(() => {
+    // Reset transient video failure state when changing levels.
+    setVideoLoadFailed(false);
+  }, [levelId]);
 
   // Update progress periodically
   useEffect(() => {
@@ -277,6 +284,9 @@ const VideoLearning: React.FC = () => {
   const hasPrevLevel = currentLevelIndex > 0;
   const hasNextLevel = currentLevelIndex > -1 && currentLevelIndex < allLevels.length - 1 && !allLevels[currentLevelIndex + 1]?.locked;
 
+  const hasVideoSource = Boolean(level?.videoPath && level.videoPath !== 'pending');
+  const showVideo = hasVideoSource && !videoLoadFailed;
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -354,76 +364,98 @@ const VideoLearning: React.FC = () => {
               ref={containerRef}
               className="relative bg-black rounded-lg overflow-hidden aspect-video group"
             >
-              {/* Video Element */}
-              <video
-                ref={videoRef}
-                src={level ? levelAPI.getStreamUrl(level._id) : ''}
-                className="w-full h-full"
-                onTimeUpdate={handleTimeUpdate}
-                onEnded={handleVideoEnded}
-                onClick={togglePlay}
-                controls={false}
-                disablePictureInPicture
-                controlsList="nodownload noplaybackrate"
-              />
+              {showVideo ? (
+                <>
+                  {/* Video Element */}
+                  <video
+                    ref={videoRef}
+                    src={level ? levelAPI.getStreamUrl(level._id) : ''}
+                    className="w-full h-full"
+                    onTimeUpdate={handleTimeUpdate}
+                    onEnded={handleVideoEnded}
+                    onClick={togglePlay}
+                    onError={() => {
+                      setVideoLoadFailed(true);
+                      setIsPlaying(false);
+                    }}
+                    controls={false}
+                    disablePictureInPicture
+                    controlsList="nodownload noplaybackrate"
+                  />
 
-              {/* Watermark */}
-              <div 
-                className="absolute pointer-events-none select-none z-10 transition-all duration-1000"
-                style={{ 
-                  left: `${watermarkPosition.x}%`, 
-                  top: `${watermarkPosition.y}%`,
-                  transform: 'translate(-50%, -50%)'
-                }}
-              >
-                <div className="bg-black/50 text-white/70 px-3 py-1 rounded text-sm font-mono">
-                  {user?.email} | {new Date().toLocaleString()}
-                </div>
-              </div>
-
-              {/* Custom Controls */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <Progress value={progress} className="h-1" />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <button onClick={togglePlay} className="text-white hover:text-blue-400">
-                      {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                      <button onClick={toggleMute} className="text-white hover:text-blue-400">
-                        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                      </button>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={volume}
-                        onChange={handleVolumeChange}
-                        className="w-20"
-                      />
+                  {/* Watermark */}
+                  <div 
+                    className="absolute pointer-events-none select-none z-10 transition-all duration-1000"
+                    style={{ 
+                      left: `${watermarkPosition.x}%`, 
+                      top: `${watermarkPosition.y}%`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  >
+                    <div className="bg-black/50 text-white/70 px-3 py-1 rounded text-sm font-mono">
+                      {user?.email} | {new Date().toLocaleString()}
                     </div>
                   </div>
 
-                  <button onClick={toggleFullscreen} className="text-white hover:text-blue-400">
-                    {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
+                  {/* Custom Controls */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Progress Bar */}
+                    <div className="mb-4">
+                      <Progress value={progress} className="h-1" />
+                    </div>
 
-              {/* Play Overlay */}
-              {!isPlaying && (
-                <div 
-                  className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer"
-                  onClick={togglePlay}
-                >
-                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <Play className="w-10 h-10 text-white ml-1" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <button onClick={togglePlay} className="text-white hover:text-blue-400">
+                          {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                        </button>
+
+                        <div className="flex items-center gap-2">
+                          <button onClick={toggleMute} className="text-white hover:text-blue-400">
+                            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                          </button>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={volume}
+                            onChange={handleVolumeChange}
+                            className="w-20"
+                          />
+                        </div>
+                      </div>
+
+                      <button onClick={toggleFullscreen} className="text-white hover:text-blue-400">
+                        {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Play Overlay */}
+                  {!isPlaying && (
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer"
+                      onClick={togglePlay}
+                    >
+                      <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <Play className="w-10 h-10 text-white ml-1" />
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-black">
+                  <div className="text-center px-6">
+                    <AlertTriangle className="w-10 h-10 text-yellow-400 mx-auto mb-3" />
+                    <p className="text-white font-semibold">
+                      {hasVideoSource ? 'Video failed to load' : 'Video not uploaded yet'}
+                    </p>
+                    <p className="text-gray-400 text-sm mt-1 max-w-md">
+                      {hasVideoSource
+                        ? 'This video could be missing on the server or you may not have access. Try again later or contact admin.'
+                        : 'This level does not have a video uploaded yet. Please contact admin.'}
+                    </p>
                   </div>
                 </div>
               )}

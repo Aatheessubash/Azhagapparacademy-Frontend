@@ -6,8 +6,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { courseAPI } from '../services/api';
-import { resolveMediaUrl } from '@/lib/media';
 import { formatINR } from '@/lib/currency';
+import MediaImage from '@/components/MediaImage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,7 +39,7 @@ import {
   Trash2, 
   Search,
   BookOpen,
-  DollarSign,
+  IndianRupee,
   Layers,
   QrCode,
   MoreVertical,
@@ -368,17 +368,16 @@ const AdminCourses: React.FC = () => {
               <Card key={course._id} className="overflow-hidden">
                 {/* Thumbnail */}
                 <div className="h-40 bg-gradient-to-br from-blue-500 to-indigo-600 relative group">
-                  {course.thumbnail ? (
-                    <img 
-                      src={resolveMediaUrl(course.thumbnail)} 
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
+                  <MediaImage
+                    src={course.thumbnail}
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                    fallback={
                     <div className="w-full h-full flex items-center justify-center">
                       <BookOpen className="w-16 h-16 text-white/50" />
                     </div>
-                  )}
+                    }
+                  />
                   
                   {/* Upload overlay */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -444,7 +443,7 @@ const AdminCourses: React.FC = () => {
                         {course.totalLevels}
                       </span>
                       <span className="flex items-center gap-1 text-gray-500">
-                        <DollarSign className="w-4 h-4" />
+                        <IndianRupee className="w-4 h-4" />
                         {formatINR(course.price)}
                         {course.isFree && (
                           <Badge variant="secondary" className="ml-2">Free</Badge>
@@ -467,7 +466,16 @@ const AdminCourses: React.FC = () => {
                       <span className="text-sm text-gray-500">Payment QR</span>
                       {course.qrCodeImage ? (
                         <div className="flex items-center gap-2">
-                          <img src={resolveMediaUrl(course.qrCodeImage)} alt="QR" className="w-8 h-8" />
+                          <MediaImage
+                            src={course.qrCodeImage}
+                            alt="QR"
+                            className="w-8 h-8 object-contain bg-white rounded"
+                            fallback={
+                              <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                                <QrCode className="w-4 h-4 text-gray-400" />
+                              </div>
+                            }
+                          />
                           <label className="cursor-pointer text-blue-600 text-sm hover:underline">
                             Change
                             <input

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { paymentAPI } from '../services/api';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatINR } from '@/lib/currency';
+import MediaImage from '@/components/MediaImage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -169,10 +170,15 @@ const AdminPayments: React.FC = () => {
               rel="noopener noreferrer"
               className="block w-24 h-24 bg-gray-100 rounded-lg overflow-hidden hover:opacity-80 transition-opacity"
             >
-              <img 
-                src={resolveMediaUrl(payment.proofImage)} 
-                alt="Payment Proof" 
+              <MediaImage
+                src={payment.proofImage}
+                alt="Payment Proof"
                 className="w-full h-full object-cover"
+                fallback={
+                  <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                    Image missing
+                  </div>
+                }
               />
             </a>
             <span className="text-xs text-gray-500">Click to enlarge</span>

@@ -7,8 +7,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { courseAPI, paymentAPI } from '../services/api';
-import { resolveMediaUrl } from '@/lib/media';
 import { formatINR } from '@/lib/currency';
+import MediaImage from '@/components/MediaImage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -208,22 +208,19 @@ const Payment: React.FC = () => {
             <CardContent className="space-y-6">
               {/* QR Code Display */}
               <div className="flex justify-center">
-                {course?.qrCodeImage ? (
-                  <div className="relative">
-                    <img 
-                      src={resolveMediaUrl(course.qrCodeImage)} 
-                      alt="Payment QR Code"
-                      className="w-64 h-64 object-contain border rounded-lg"
-                    />
-                  </div>
-                ) : (
+                <MediaImage
+                  src={course?.qrCodeImage}
+                  alt="Payment QR Code"
+                  className="w-64 h-64 object-contain border rounded-lg bg-white"
+                  fallback={
                   <div className="w-64 h-64 bg-gray-100 flex items-center justify-center rounded-lg border-2 border-dashed">
                     <div className="text-center">
                       <QrCode className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                       <p className="text-gray-500">QR Code not available</p>
                     </div>
                   </div>
-                )}
+                  }
+                />
               </div>
 
               <Separator />

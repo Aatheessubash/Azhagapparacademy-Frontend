@@ -10,7 +10,7 @@ import { formatINR } from '@/lib/currency';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, DollarSign, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, IndianRupee, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 interface RevenueResponse {
   totalRevenue: number;
@@ -111,7 +111,7 @@ const AdminRevenue: React.FC = () => {
                 <CardContent>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <DollarSign className="w-6 h-6 text-blue-600" />
+                      <IndianRupee className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
                       <p className="text-2xl font-bold">{formatINR(data.totalRevenue)}</p>

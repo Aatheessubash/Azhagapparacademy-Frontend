@@ -6,8 +6,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { courseAPI } from '../services/api';
-import { resolveMediaUrl } from '@/lib/media';
 import { formatINR } from '@/lib/currency';
+import MediaImage from '@/components/MediaImage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ import {
   PlayCircle,
   ChevronRight,
   BookOpen,
-  DollarSign,
+  IndianRupee,
   QrCode
 } from 'lucide-react';
 import {
@@ -193,17 +193,16 @@ const CourseDetails: React.FC = () => {
             {/* Course Header */}
             <Card className="overflow-hidden mb-6">
               <div className="h-64 bg-gradient-to-br from-blue-500 to-indigo-600 relative">
-                {course.thumbnail ? (
-                  <img 
-                    src={resolveMediaUrl(course.thumbnail)} 
-                    alt={course.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
+                <MediaImage
+                  src={course.thumbnail}
+                  alt={course.title}
+                  className="w-full h-full object-cover"
+                  fallback={
                   <div className="w-full h-full flex items-center justify-center">
                     <BookOpen className="w-24 h-24 text-white/50" />
                   </div>
-                )}
+                  }
+                />
                 
                 {!course.hasAccess && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -242,7 +241,7 @@ const CourseDetails: React.FC = () => {
                   <p className="text-gray-600 whitespace-pre-wrap">{course.description}</p>
                 </div>
 
-                {course.youtubeEmbedUrl && (
+                {course.hasAccess && course.youtubeEmbedUrl && (
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Course Intro Video</h3>
                     <div className="aspect-video overflow-hidden rounded-lg border bg-black">
@@ -285,7 +284,7 @@ const CourseDetails: React.FC = () => {
                       className="w-full"
                       onClick={handlePaymentClick}
                     >
-                      <DollarSign className="w-5 h-5 mr-2" />
+                      <IndianRupee className="w-5 h-5 mr-2" />
                       {`Unlock Course - ${formatINR(course.price)}`}
                     </Button>
                   )}
@@ -446,17 +445,16 @@ const CourseDetails: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center py-4">
-            {course.qrCodeImage ? (
-              <img 
-                src={resolveMediaUrl(course.qrCodeImage)} 
-                alt="Payment QR Code"
-                className="max-w-full h-auto"
-              />
-            ) : (
+            <MediaImage
+              src={course.qrCodeImage}
+              alt="Payment QR Code"
+              className="max-w-full h-auto"
+              fallback={
               <div className="w-64 h-64 bg-gray-100 flex items-center justify-center rounded-lg">
                 <p className="text-gray-500">QR Code not available</p>
               </div>
-            )}
+              }
+            />
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">{formatINR(course.price)}</p>
