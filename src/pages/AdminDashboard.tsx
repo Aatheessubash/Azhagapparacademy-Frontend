@@ -51,8 +51,8 @@ interface DashboardStats {
 
 interface RecentPayment {
   _id: string;
-  userId: { name: string; email: string };
-  courseId: { title: string };
+  userId: { name: string; email: string } | null;
+  courseId: { title: string } | null;
   amount: number;
   status: string;
   createdAt: string;
@@ -421,8 +421,8 @@ const AdminDashboard: React.FC = () => {
                   recentPayments.map((payment) => (
                     <div key={payment._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
-                        <p className="font-medium text-gray-900">{payment.userId.name}</p>
-                        <p className="text-sm text-gray-500">{payment.courseId.title}</p>
+                        <p className="font-medium text-gray-900">{payment.userId?.name || 'Unknown student'}</p>
+                        <p className="text-sm text-gray-500">{payment.courseId?.title || '(Course deleted)'}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-medium">{formatINR(payment.amount)}</p>

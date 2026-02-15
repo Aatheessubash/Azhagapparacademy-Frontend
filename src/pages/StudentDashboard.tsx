@@ -52,7 +52,7 @@ interface MyProgress {
     _id: string;
     title: string;
     thumbnail?: string;
-  };
+  } | null;
   totalProgress: number;
   currentLevel: number;
   courseCompleted: boolean;
@@ -90,7 +90,9 @@ const StudentDashboard: React.FC = () => {
       
       const courseList = Array.isArray(coursesRes.data) ? coursesRes.data : coursesRes.data.courses || [];
       setCourses(courseList);
-      setMyProgress(progressRes.data.progress);
+      const progressList = Array.isArray(progressRes.data?.progress) ? progressRes.data.progress : [];
+      // Defensive: progress may contain orphaned entries if a course was deleted.
+      setMyProgress(progressList.filter((entry: MyProgress) => entry?.courseId?._id));
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -247,34 +249,40 @@ const StudentDashboard: React.FC = () => {
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Continue Learning</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myProgress.slice(0, 2).map((progress) => (
-                <Card key={progress.courseId._id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="w-8 h-8 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 truncate">{progress.courseId.title}</h4>
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between text-sm mb-1">
-                            <span className="text-gray-500">{progress.totalProgress}% complete</span>
-                            <span className="text-gray-500">Level {progress.currentLevel}</span>
-                          </div>
-                          <Progress value={progress.totalProgress} className="h-2" />
+              {myProgress.slice(0, 2).map((progress) => {
+                if (!progress.courseId) return null;
+                const courseId = progress.courseId._id;
+                const courseTitle = progress.courseId.title;
+
+                return (
+                  <Card key={courseId} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <BookOpen className="w-8 h-8 text-blue-600" />
                         </div>
-                        <Button 
-                          className="mt-3 w-full" 
-                          size="sm"
-                          onClick={() => navigate(`/course/${progress.courseId._id}`)}
-                        >
-                          Continue <ChevronRight className="w-4 h-4 ml-1" />
-                        </Button>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-900 truncate">{courseTitle}</h4>
+                          <div className="mt-2">
+                            <div className="flex items-center justify-between text-sm mb-1">
+                              <span className="text-gray-500">{progress.totalProgress}% complete</span>
+                              <span className="text-gray-500">Level {progress.currentLevel}</span>
+                            </div>
+                            <Progress value={progress.totalProgress} className="h-2" />
+                          </div>
+                          <Button
+                            className="mt-3 w-full"
+                            size="sm"
+                            onClick={() => navigate(`/course/${courseId}`)}
+                          >
+                            Continue <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         )}

@@ -34,7 +34,7 @@ interface UserItem {
 
 interface ProgressEntry {
   _id: string;
-  courseId: { _id: string; title: string };
+  courseId: { _id: string; title: string } | null;
   totalProgress: number;
   courseCompleted: boolean;
   currentLevel: number;
@@ -338,7 +338,7 @@ const AdminStudents: React.FC = () => {
               progress.map((item) => (
                 <div key={item._id} className="p-3 border rounded-lg flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-900">{item.courseId.title}</p>
+                    <p className="font-medium text-gray-900">{item.courseId?.title || '(Course deleted)'}</p>
                     <p className="text-sm text-gray-500">
                       Updated {new Date(item.updatedAt || item._id).toLocaleDateString()}
                     </p>

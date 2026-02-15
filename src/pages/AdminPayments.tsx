@@ -35,8 +35,8 @@ import {
 
 interface Payment {
   _id: string;
-  userId: { name: string; email: string };
-  courseId: { title: string };
+  userId: { name: string; email: string } | null;
+  courseId: { title: string } | null;
   transactionId: string;
   amount: number;
   proofImage: string;
@@ -116,12 +116,20 @@ const AdminPayments: React.FC = () => {
     }
   };
 
-  const filteredPayments = payments.filter(payment =>
-    payment.userId.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    payment.userId.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    payment.courseId.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    payment.transactionId.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const normalizedQuery = searchQuery.toLowerCase();
+  const filteredPayments = payments.filter((payment) => {
+    const studentName = payment.userId?.name || '';
+    const studentEmail = payment.userId?.email || '';
+    const courseTitle = payment.courseId?.title || '';
+    const transactionId = payment.transactionId || '';
+
+    return (
+      studentName.toLowerCase().includes(normalizedQuery) ||
+      studentEmail.toLowerCase().includes(normalizedQuery) ||
+      courseTitle.toLowerCase().includes(normalizedQuery) ||
+      transactionId.toLowerCase().includes(normalizedQuery)
+    );
+  });
 
   const pendingPayments = filteredPayments.filter(p => p.status === 'pending');
   const approvedPayments = filteredPayments.filter(p => p.status === 'approved');
@@ -142,12 +150,12 @@ const AdminPayments: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <p className="text-xs text-gray-500">Student</p>
-                <p className="font-medium">{payment.userId.name}</p>
-                <p className="text-sm text-gray-500">{payment.userId.email}</p>
+                <p className="font-medium">{payment.userId?.name || 'Unknown student'}</p>
+                <p className="text-sm text-gray-500">{payment.userId?.email || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Course</p>
-                <p className="font-medium">{payment.courseId.title}</p>
+                <p className="font-medium">{payment.courseId?.title || '(Course deleted)'}</p>
               </div>
             </div>
 
@@ -380,7 +388,7 @@ const AdminPayments: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">Student:</span>
-                  <p className="font-medium">{selectedPayment?.userId.name}</p>
+                  <p className="font-medium">{selectedPayment?.userId?.name || 'Unknown student'}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Amount:</span>
@@ -388,7 +396,7 @@ const AdminPayments: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-gray-500">Course:</span>
-                  <p className="font-medium">{selectedPayment?.courseId.title}</p>
+                  <p className="font-medium">{selectedPayment?.courseId?.title || '(Course deleted)'}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Transaction ID:</span>
