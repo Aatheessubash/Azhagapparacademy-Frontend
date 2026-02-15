@@ -79,6 +79,9 @@ const AdminLevels: React.FC = () => {
   const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [videoAction, setVideoAction] = useState<'upload' | 'link' | null>(null);
+  const [videoLink, setVideoLink] = useState('');
+  const [videoLinkError, setVideoLinkError] = useState('');
 
   // Form states
   const [formData, setFormData] = useState({
@@ -170,6 +173,7 @@ const AdminLevels: React.FC = () => {
   const handleVideoUpload = async (file: File) => {
     if (!selectedLevel) return;
 
+    setVideoAction('upload');
     setIsSubmitting(true);
     setUploadProgress(0);
 
@@ -183,6 +187,41 @@ const AdminLevels: React.FC = () => {
     } finally {
       setIsSubmitting(false);
       setUploadProgress(0);
+      setVideoAction(null);
+    }
+  };
+
+  const handleVideoLinkSave = async () => {
+    if (!selectedLevel) return;
+
+    const url = videoLink.trim();
+    if (!url) {
+      setVideoLinkError('Please enter a Google Drive video link.');
+      return;
+    }
+
+    setVideoAction('link');
+    setIsSubmitting(true);
+    setVideoLinkError('');
+
+    try {
+      await levelAPI.setVideoLink(selectedLevel._id, url);
+      setShowVideoDialog(false);
+      setSelectedLevel(null);
+      setVideoLink('');
+      void fetchData();
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+          ? (error as { response?: { data?: { message?: string } } }).response!.data!.message!
+          : 'Failed to save video link.';
+      setVideoLinkError(message);
+    } finally {
+      setIsSubmitting(false);
+      setVideoAction(null);
     }
   };
 
@@ -213,6 +252,9 @@ const AdminLevels: React.FC = () => {
 
   const openVideoDialog = (level: Level) => {
     setSelectedLevel(level);
+    setVideoLink('');
+    setVideoLinkError('');
+    setVideoAction(null);
     setShowVideoDialog(true);
   };
 
@@ -466,7 +508,38 @@ const AdminLevels: React.FC = () => {
                 </Button>
               </label>
             </div>
-            {isSubmitting && (
+
+            <div className="my-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="text-xs text-gray-500 uppercase">or</span>
+              <div className="h-px flex-1 bg-gray-200" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="video-link">Google Drive link</Label>
+              <Input
+                id="video-link"
+                placeholder="https://drive.google.com/file/d/..."
+                value={videoLink}
+                onChange={(e) => setVideoLink(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">
+                Use a public Google Drive link (Anyone with the link can view).
+              </p>
+              {videoLinkError && <p className="text-sm text-red-600">{videoLinkError}</p>}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={isSubmitting || !videoLink.trim()}
+                onClick={handleVideoLinkSave}
+              >
+                {isSubmitting && videoAction === 'link' && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save Video Link
+              </Button>
+            </div>
+
+            {isSubmitting && videoAction === 'upload' && (
               <div className="mt-4">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span>Uploading...</span>

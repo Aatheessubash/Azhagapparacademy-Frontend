@@ -15,6 +15,8 @@ import {
   ArrowLeft, 
   Play, 
   Pause, 
+  SkipBack,
+  SkipForward,
   Volume2, 
   VolumeX,
   Maximize,
@@ -41,6 +43,7 @@ interface Level {
   description?: string;
   quizEnabled: boolean;
   locked?: boolean;
+  hasVideo?: boolean;
 }
 
 interface CourseLevel extends Level {
@@ -184,6 +187,7 @@ const VideoLearning: React.FC = () => {
     const interval = setInterval(() => {
       if (videoRef.current && level) {
         const video = videoRef.current;
+        if (!Number.isFinite(video.duration) || video.duration <= 0) return;
         const watchedPercent = (video.currentTime / video.duration) * 100;
         
         if (watchedPercent > 10) {
@@ -199,15 +203,33 @@ const VideoLearning: React.FC = () => {
     return () => clearInterval(interval);
   }, [courseId, levelId, level]);
 
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+  const togglePlay = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      video.pause();
+      setIsPlaying(false);
+      return;
     }
+
+    try {
+      await video.play();
+      setIsPlaying(true);
+    } catch {
+      setIsPlaying(false);
+      setSecurityWarning('Playback was blocked by the browser. Click play to start.');
+      setTimeout(() => setSecurityWarning(null), 4000);
+    }
+  };
+
+  const seekBy = (deltaSeconds: number) => {
+    const video = videoRef.current;
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return;
+
+    const nextTime = Math.min(video.duration, Math.max(0, video.currentTime + deltaSeconds));
+    video.currentTime = nextTime;
+    setProgress((nextTime / video.duration) * 100);
   };
 
   const toggleMute = () => {
@@ -239,8 +261,9 @@ const VideoLearning: React.FC = () => {
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      const percent = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-      setProgress(percent);
+      const video = videoRef.current;
+      if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+      setProgress((video.currentTime / video.duration) * 100);
     }
   };
 
@@ -284,7 +307,7 @@ const VideoLearning: React.FC = () => {
   const hasPrevLevel = currentLevelIndex > 0;
   const hasNextLevel = currentLevelIndex > -1 && currentLevelIndex < allLevels.length - 1 && !allLevels[currentLevelIndex + 1]?.locked;
 
-  const hasVideoSource = Boolean(level?.videoPath && level.videoPath !== 'pending');
+  const hasVideoSource = Boolean(level?.hasVideo ?? (level?.videoPath && level.videoPath !== 'pending'));
   const showVideo = hasVideoSource && !videoLoadFailed;
 
   if (isLoading) {
@@ -408,6 +431,22 @@ const VideoLearning: React.FC = () => {
                       <div className="flex items-center gap-4">
                         <button onClick={togglePlay} className="text-white hover:text-blue-400">
                           {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => seekBy(-10)}
+                          className="text-white hover:text-blue-400"
+                          aria-label="Back 10 seconds"
+                        >
+                          <SkipBack className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => seekBy(10)}
+                          className="text-white hover:text-blue-400"
+                          aria-label="Forward 10 seconds"
+                        >
+                          <SkipForward className="w-5 h-5" />
                         </button>
 
                         <div className="flex items-center gap-2">

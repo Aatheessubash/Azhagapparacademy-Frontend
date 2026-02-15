@@ -133,6 +133,9 @@ export const levelAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
+
+  setVideoLink: (id: string, url: string) =>
+    api.put(`/levels/${id}/video-link`, { url }),
   
   getStreamUrl: (id: string) => {
     const token = localStorage.getItem('token');
