@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import type { AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { courseAPI } from '../services/api';
 import { formatINR } from '@/lib/currency';
@@ -78,6 +79,15 @@ type CourseForm = {
   youtubeEmbedUrl: string;
 };
 
+type ApiErrorResponse = {
+  message?: string;
+};
+
+const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
+  const typedError = error as AxiosError<ApiErrorResponse>;
+  return typedError?.response?.data?.message || fallbackMessage;
+};
+
 type PendingQRChange = {
   courseId: string;
   file: File;
@@ -97,6 +107,7 @@ const AdminCourses: React.FC = () => {
   const [pendingQRChange, setPendingQRChange] = useState<PendingQRChange | null>(null);
   const [qrChangePassword, setQRChangePassword] = useState('');
   const [qrChangeError, setQRChangeError] = useState('');
+  const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states
@@ -141,13 +152,21 @@ const AdminCourses: React.FC = () => {
     }
 
     setIsSubmitting(true);
+    setFormError('');
     try {
-      await courseAPI.create(formData);
+      const payload = {
+        ...formData,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        price: formData.isFree ? 0 : formData.price
+      };
+      await courseAPI.create(payload);
       setShowCreateDialog(false);
       resetForm();
       fetchCourses();
     } catch (error) {
       console.error('Failed to create course:', error);
+      setFormError(getApiErrorMessage(error, 'Failed to create course.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -161,14 +180,22 @@ const AdminCourses: React.FC = () => {
     }
 
     setIsSubmitting(true);
+    setFormError('');
     try {
-      await courseAPI.update(selectedCourse._id, formData);
+      const payload = {
+        ...formData,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        price: formData.isFree ? 0 : formData.price
+      };
+      await courseAPI.update(selectedCourse._id, payload);
       setShowEditDialog(false);
       setSelectedCourse(null);
       resetForm();
       fetchCourses();
     } catch (error) {
       console.error('Failed to update course:', error);
+      setFormError(getApiErrorMessage(error, 'Failed to update course.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -281,6 +308,7 @@ const AdminCourses: React.FC = () => {
 
   const openEditDialog = (course: Course) => {
     setSelectedCourse(course);
+    setFormError('');
     setFormData({
       title: course.title,
       description: course.description,
@@ -329,7 +357,11 @@ const AdminCourses: React.FC = () => {
               </Button>
               <h1 className="text-xl font-bold text-gray-900">Manage Courses</h1>
             </div>
-            <Button onClick={() => setShowCreateDialog(true)}>
+            <Button onClick={() => {
+              resetForm();
+              setFormError('');
+              setShowCreateDialog(true);
+            }}>
               <Plus className="w-4 h-4 mr-2" />
               Add Course
             </Button>
@@ -604,6 +636,9 @@ const AdminCourses: React.FC = () => {
                 <option value="archived">Archived</option>
               </select>
             </div>
+            {formError && (
+              <p className="text-sm text-red-600">{formError}</p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
@@ -700,6 +735,9 @@ const AdminCourses: React.FC = () => {
                 <option value="archived">Archived</option>
               </select>
             </div>
+            {formError && (
+              <p className="text-sm text-red-600">{formError}</p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
