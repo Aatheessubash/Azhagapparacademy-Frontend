@@ -519,12 +519,12 @@ const AdminLevels: React.FC = () => {
               <Label htmlFor="video-link">Google Drive link</Label>
               <Input
                 id="video-link"
-                placeholder="https://drive.google.com/file/d/..."
+                placeholder="https://drive.google.com/file/d/... or Drive file ID"
                 value={videoLink}
                 onChange={(e) => setVideoLink(e.target.value)}
               />
               <p className="text-xs text-gray-500">
-                Use a public Google Drive link (Anyone with the link can view).
+                Use a public Google Drive link (or just the Drive file ID). Anyone with the link must be able to view.
               </p>
               {videoLinkError && <p className="text-sm text-red-600">{videoLinkError}</p>}
               <Button
