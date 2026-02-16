@@ -9,7 +9,6 @@ import { levelAPI, progressAPI, quizAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
@@ -59,7 +58,8 @@ const VideoLearning: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const isSeekingRef = useRef(false);
-  
+  const controlsHideTimeoutRef = useRef<number | null>(null);
+
   const [level, setLevel] = useState<CourseLevel | null>(null);
   const [allLevels, setAllLevels] = useState<Level[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,6 +67,9 @@ const VideoLearning: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [bufferedPercent, setBufferedPercent] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showQuizDialog, setShowQuizDialog] = useState(false);
   const [hasQuiz, setHasQuiz] = useState(false);
@@ -74,6 +77,13 @@ const VideoLearning: React.FC = () => {
   const [tabSwitchWarning, setTabSwitchWarning] = useState(false);
   const [securityWarning, setSecurityWarning] = useState<string | null>(null);
   const [watermarkPosition, setWatermarkPosition] = useState({ x: 20, y: 20 });
+  const [showControls, setShowControls] = useState(true);
+  const [isTheater, setIsTheater] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [showSettings, setShowSettings] = useState(false);
+  const [hoverTime, setHoverTime] = useState<string | null>(null);
+  const [hoverPosition, setHoverPosition] = useState(0);
+  const [showHoverTime, setShowHoverTime] = useState(false);
 
   // Security: Detect tab/window blur
   useEffect(() => {
@@ -113,6 +123,12 @@ const VideoLearning: React.FC = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume;
+    }
+  }, [volume]);
 
   // Security: basic print-screen / devtools detection to warn users
   useEffect(() => {
@@ -184,6 +200,31 @@ const VideoLearning: React.FC = () => {
     setVideoLoadFailed(false);
   }, [levelId]);
 
+  const formatTime = (seconds: number) => {
+    if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+    const total = Math.floor(seconds);
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    const hrs = Math.floor(mins / 60);
+    const minsRemainder = mins % 60;
+    if (hrs > 0) {
+      return `${hrs}:${String(minsRemainder).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const updateBuffered = () => {
+    const video = videoRef.current;
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return;
+    const buffered = video.buffered;
+    if (!buffered || buffered.length === 0) {
+      setBufferedPercent(0);
+      return;
+    }
+    const end = buffered.end(buffered.length - 1);
+    setBufferedPercent(Math.min(100, (end / video.duration) * 100));
+  };
+
   // Update progress periodically
   useEffect(() => {
     const interval = setInterval(() => {
@@ -249,6 +290,24 @@ const VideoLearning: React.FC = () => {
     }
   };
 
+  const toggleTheater = () => {
+    setIsTheater((prev) => !prev);
+  };
+
+  const togglePictureInPicture = async () => {
+    const video = videoRef.current as HTMLVideoElement & { requestPictureInPicture?: () => Promise<void> };
+    if (!video || !document.pictureInPictureEnabled) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await video.requestPictureInPicture?.();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const toggleFullscreen = () => {
     if (containerRef.current) {
       if (!document.fullscreenElement) {
@@ -265,9 +324,79 @@ const VideoLearning: React.FC = () => {
     if (videoRef.current) {
       const video = videoRef.current;
       if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+      setCurrentTime(video.currentTime);
+      setDuration(video.duration);
       setProgress((video.currentTime / video.duration) * 100);
     }
   };
+
+  const handleLoadedMetadata = () => {
+    if (!videoRef.current) return;
+    setDuration(videoRef.current.duration || 0);
+  };
+
+  const scheduleControlsHide = () => {
+    if (controlsHideTimeoutRef.current) {
+      window.clearTimeout(controlsHideTimeoutRef.current);
+    }
+    setShowControls(true);
+    controlsHideTimeoutRef.current = window.setTimeout(() => {
+      if (isPlaying && !showSettings) {
+        setShowControls(false);
+      }
+    }, 2000);
+  };
+
+  useEffect(() => {
+    scheduleControlsHide();
+    return () => {
+      if (controlsHideTimeoutRef.current) {
+        window.clearTimeout(controlsHideTimeoutRef.current);
+      }
+    };
+  }, [isPlaying, showSettings]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!videoRef.current) return;
+      if (event.target && (event.target as HTMLElement).tagName === 'INPUT') return;
+      if (event.code === 'Space' || event.code === 'KeyK') {
+        event.preventDefault();
+        void togglePlay();
+      }
+      if (event.code === 'ArrowLeft' || event.code === 'KeyJ') {
+        event.preventDefault();
+        seekBy(-10);
+      }
+      if (event.code === 'ArrowRight' || event.code === 'KeyL') {
+        event.preventDefault();
+        seekBy(10);
+      }
+      if (event.code === 'ArrowUp') {
+        event.preventDefault();
+        setVolume((prev) => Math.min(1, prev + 0.05));
+      }
+      if (event.code === 'ArrowDown') {
+        event.preventDefault();
+        setVolume((prev) => Math.max(0, prev - 0.05));
+      }
+      if (event.code === 'KeyM') {
+        event.preventDefault();
+        toggleMute();
+      }
+      if (event.code === 'KeyF') {
+        event.preventDefault();
+        toggleFullscreen();
+      }
+      if (event.code === 'KeyT') {
+        event.preventDefault();
+        toggleTheater();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, isMuted, volume, showSettings]);
 
   const seekToClientX = (clientX: number) => {
     const video = videoRef.current;
@@ -419,10 +548,12 @@ const VideoLearning: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Video Player */}
-          <div className="lg:col-span-2">
+          <div className={`lg:col-span-2 ${isTheater ? 'lg:col-span-3' : ''}`}>
             <div 
               ref={containerRef}
-              className="relative bg-black rounded-lg overflow-hidden aspect-video group"
+              className={`relative bg-black overflow-hidden aspect-video group ${isTheater ? 'rounded-none lg:rounded-lg' : 'rounded-lg'}`}
+              onMouseMove={scheduleControlsHide}
+              onTouchStart={scheduleControlsHide}
             >
               {showVideo ? (
                 <>
@@ -432,8 +563,15 @@ const VideoLearning: React.FC = () => {
                     src={level ? levelAPI.getStreamUrl(level._id) : ''}
                     className="w-full h-full"
                     onTimeUpdate={handleTimeUpdate}
+                    onLoadedMetadata={handleLoadedMetadata}
+                    onProgress={updateBuffered}
                     onEnded={handleVideoEnded}
                     onClick={togglePlay}
+                    onDoubleClick={(event) => {
+                      const rect = (event.currentTarget as HTMLVideoElement).getBoundingClientRect();
+                      const isLeft = event.clientX - rect.left < rect.width / 2;
+                      seekBy(isLeft ? -10 : 10);
+                    }}
                     onError={() => {
                       setVideoLoadFailed(true);
                       setIsPlaying(false);
@@ -458,7 +596,7 @@ const VideoLearning: React.FC = () => {
                   </div>
 
                   {/* Custom Controls */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity ${showControls ? 'opacity-100' : 'opacity-0'}`}>
                     {/* Progress Bar */}
                     <div className="mb-4">
                       <div
@@ -476,8 +614,36 @@ const VideoLearning: React.FC = () => {
                         onClick={(event) => {
                           seekToClientX(event.clientX);
                         }}
+                        onPointerMove={(event) => {
+                          const bar = progressBarRef.current;
+                          if (!bar || !Number.isFinite(duration) || duration <= 0) return;
+                          const rect = bar.getBoundingClientRect();
+                          const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+                          const time = ratio * duration;
+                          setHoverTime(formatTime(time));
+                          setHoverPosition(ratio * 100);
+                          setShowHoverTime(true);
+                        }}
+                        onPointerLeave={() => setShowHoverTime(false)}
                       >
-                        <Progress value={progress} className="h-2" />
+                        <div className="relative h-2 rounded-full bg-white/20">
+                          <div
+                            className="absolute left-0 top-0 h-2 rounded-full bg-white/40"
+                            style={{ width: `${bufferedPercent}%` }}
+                          />
+                          <div
+                            className="absolute left-0 top-0 h-2 rounded-full bg-blue-500"
+                            style={{ width: `${progress}%` }}
+                          />
+                          {showHoverTime && (
+                            <div
+                              className="absolute -top-8 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded"
+                              style={{ left: `${hoverPosition}%` }}
+                            >
+                              {hoverTime}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -503,6 +669,10 @@ const VideoLearning: React.FC = () => {
                           <SkipForward className="w-5 h-5" />
                         </button>
 
+                        <span className="text-xs text-gray-200">
+                          {formatTime(currentTime)} / {formatTime(duration)}
+                        </span>
+
                         <div className="flex items-center gap-2">
                           <button onClick={toggleMute} className="text-white hover:text-blue-400">
                             {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
@@ -519,9 +689,60 @@ const VideoLearning: React.FC = () => {
                         </div>
                       </div>
 
-                      <button onClick={toggleFullscreen} className="text-white hover:text-blue-400">
-                        {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-                      </button>
+                      <div className="flex items-center gap-3 relative">
+                        <button
+                          type="button"
+                          className="text-white hover:text-blue-400 text-sm"
+                          onClick={() => setShowSettings((prev) => !prev)}
+                        >
+                          Settings
+                        </button>
+                        <button
+                          type="button"
+                          className="text-white hover:text-blue-400 text-sm"
+                          onClick={toggleTheater}
+                        >
+                          {isTheater ? 'Default' : 'Theater'}
+                        </button>
+                        <button
+                          type="button"
+                          className="text-white hover:text-blue-400 text-sm"
+                          onClick={togglePictureInPicture}
+                        >
+                          PiP
+                        </button>
+                        <button onClick={toggleFullscreen} className="text-white hover:text-blue-400">
+                          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+                        </button>
+                        {showSettings && (
+                          <div className="absolute right-0 bottom-10 w-40 bg-gray-900 border border-gray-700 rounded-md p-2 text-xs text-white shadow-lg">
+                            <div className="mb-2 text-gray-400">Playback speed</div>
+                            {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                              <button
+                                key={rate}
+                                type="button"
+                                className={`w-full text-left px-2 py-1 rounded hover:bg-gray-800 ${rate === playbackRate ? 'text-blue-400' : ''}`}
+                                onClick={() => {
+                                  setPlaybackRate(rate);
+                                  if (videoRef.current) {
+                                    videoRef.current.playbackRate = rate;
+                                  }
+                                }}
+                              >
+                                {rate}x
+                              </button>
+                            ))}
+                            <div className="mt-2 text-gray-400">Captions</div>
+                            <button
+                              type="button"
+                              className="w-full text-left px-2 py-1 rounded hover:bg-gray-800 text-gray-500 cursor-not-allowed"
+                              disabled
+                            >
+                              Not available
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
