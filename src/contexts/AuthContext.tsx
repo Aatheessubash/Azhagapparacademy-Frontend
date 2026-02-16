@@ -49,6 +49,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (token && savedUser) {
         try {
+          const parsedUser = JSON.parse(savedUser) as User;
+          setUser(parsedUser);
+        } catch {
+          localStorage.removeItem('user');
+        }
+      }
+
+      setIsLoading(false);
+
+      if (token) {
+        try {
           // Verify token is still valid
           const response = await authAPI.getMe();
           setUser(response.data.user);
@@ -57,10 +68,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // Token invalid, clear storage
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          setUser(null);
         }
       }
-
-      setIsLoading(false);
     };
 
     initAuth();
