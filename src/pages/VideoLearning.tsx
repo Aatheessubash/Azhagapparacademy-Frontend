@@ -57,6 +57,8 @@ const VideoLearning: React.FC = () => {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const isSeekingRef = useRef(false);
   
   const [level, setLevel] = useState<CourseLevel | null>(null);
   const [allLevels, setAllLevels] = useState<Level[]>([]);
@@ -267,6 +269,41 @@ const VideoLearning: React.FC = () => {
     }
   };
 
+  const seekToClientX = (clientX: number) => {
+    const video = videoRef.current;
+    const bar = progressBarRef.current;
+    if (!video || !bar || !Number.isFinite(video.duration) || video.duration <= 0) return;
+
+    const rect = bar.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const nextTime = ratio * video.duration;
+    video.currentTime = nextTime;
+    setProgress(ratio * 100);
+  };
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!isSeekingRef.current) return;
+      seekToClientX(event.clientX);
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      if (!isSeekingRef.current) return;
+      seekToClientX(event.clientX);
+      isSeekingRef.current = false;
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+    };
+  }, []);
+
   const handleVideoEnded = () => {
     setIsPlaying(false);
     
@@ -424,7 +461,24 @@ const VideoLearning: React.FC = () => {
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                     {/* Progress Bar */}
                     <div className="mb-4">
-                      <Progress value={progress} className="h-1" />
+                      <div
+                        ref={progressBarRef}
+                        className="h-2 cursor-pointer touch-none"
+                        role="slider"
+                        aria-label="Seek"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(progress)}
+                        onPointerDown={(event) => {
+                          isSeekingRef.current = true;
+                          seekToClientX(event.clientX);
+                        }}
+                        onClick={(event) => {
+                          seekToClientX(event.clientX);
+                        }}
+                      >
+                        <Progress value={progress} className="h-2" />
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between">
