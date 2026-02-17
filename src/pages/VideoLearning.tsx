@@ -6,7 +6,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { levelAPI, progressAPI, quizAPI } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +24,10 @@ import {
   AlertTriangle,
   ChevronRight,
   ChevronLeft,
-  MessageCircle
+  MessageCircle,
+  Settings,
+  PictureInPicture2,
+  RectangleHorizontal
 } from 'lucide-react';
 import {
   Dialog,
@@ -52,13 +54,14 @@ interface CourseLevel extends Level {
 const VideoLearning: React.FC = () => {
   const { courseId, levelId } = useParams<{ courseId: string; levelId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const settingsMenuContainerRef = useRef<HTMLDivElement>(null);
   const isSeekingRef = useRef(false);
   const controlsHideTimeoutRef = useRef<number | null>(null);
+  const clickDelayTimeoutRef = useRef<number | null>(null);
 
   const [level, setLevel] = useState<CourseLevel | null>(null);
   const [allLevels, setAllLevels] = useState<Level[]>([]);
@@ -76,7 +79,6 @@ const VideoLearning: React.FC = () => {
   const [videoLoadFailed, setVideoLoadFailed] = useState(false);
   const [tabSwitchWarning, setTabSwitchWarning] = useState(false);
   const [securityWarning, setSecurityWarning] = useState<string | null>(null);
-  const [watermarkPosition, setWatermarkPosition] = useState({ x: 20, y: 20 });
   const [showControls, setShowControls] = useState(true);
   const [isTheater, setIsTheater] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
@@ -112,23 +114,15 @@ const VideoLearning: React.FC = () => {
     };
   }, [isPlaying]);
 
-  // Security: Moving watermark
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWatermarkPosition({
-        x: Math.random() * 60 + 10, // 10% to 70%
-        y: Math.random() * 60 + 10  // 10% to 70%
-      });
-    }, 10000); // Move every 10 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.volume = volume;
+      if (volume > 0 && isMuted) {
+        videoRef.current.muted = false;
+        setIsMuted(false);
+      }
     }
-  }, [volume]);
+  }, [volume, isMuted]);
 
   // Security: basic print-screen / devtools detection to warn users
   useEffect(() => {
@@ -285,6 +279,12 @@ const VideoLearning: React.FC = () => {
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
+    if (newVolume > 0 && isMuted) {
+      setIsMuted(false);
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+      }
+    }
     if (videoRef.current) {
       videoRef.current.volume = newVolume;
     }
@@ -312,12 +312,29 @@ const VideoLearning: React.FC = () => {
     if (containerRef.current) {
       if (!document.fullscreenElement) {
         containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
       } else {
         document.exitFullscreen();
-        setIsFullscreen(false);
       }
     }
+  };
+
+  const handlePlayerClick = () => {
+    if (clickDelayTimeoutRef.current) {
+      window.clearTimeout(clickDelayTimeoutRef.current);
+    }
+    clickDelayTimeoutRef.current = window.setTimeout(() => {
+      void togglePlay();
+    }, 180);
+  };
+
+  const handlePlayerDoubleClick = (event: React.MouseEvent<HTMLVideoElement>) => {
+    if (clickDelayTimeoutRef.current) {
+      window.clearTimeout(clickDelayTimeoutRef.current);
+      clickDelayTimeoutRef.current = null;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const isLeft = event.clientX - rect.left < rect.width / 2;
+    seekBy(isLeft ? -10 : 10);
   };
 
   const handleTimeUpdate = () => {
@@ -353,8 +370,31 @@ const VideoLearning: React.FC = () => {
       if (controlsHideTimeoutRef.current) {
         window.clearTimeout(controlsHideTimeoutRef.current);
       }
+      if (clickDelayTimeoutRef.current) {
+        window.clearTimeout(clickDelayTimeoutRef.current);
+      }
     };
   }, [isPlaying, showSettings]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  useEffect(() => {
+    const handleOutsidePointer = (event: PointerEvent) => {
+      if (!showSettings) return;
+      const target = event.target as Node;
+      if (settingsMenuContainerRef.current && !settingsMenuContainerRef.current.contains(target)) {
+        setShowSettings(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsidePointer);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointer);
+  }, [showSettings]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -497,7 +537,7 @@ const VideoLearning: React.FC = () => {
               </Button>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-gray-300">
+              <span className="hidden sm:block text-gray-300 truncate max-w-[36vw]">
                 Level {level?.levelNumber}: {level?.title}
               </span>
             </div>
@@ -566,12 +606,8 @@ const VideoLearning: React.FC = () => {
                     onLoadedMetadata={handleLoadedMetadata}
                     onProgress={updateBuffered}
                     onEnded={handleVideoEnded}
-                    onClick={togglePlay}
-                    onDoubleClick={(event) => {
-                      const rect = (event.currentTarget as HTMLVideoElement).getBoundingClientRect();
-                      const isLeft = event.clientX - rect.left < rect.width / 2;
-                      seekBy(isLeft ? -10 : 10);
-                    }}
+                    onClick={handlePlayerClick}
+                    onDoubleClick={handlePlayerDoubleClick}
                     onError={() => {
                       setVideoLoadFailed(true);
                       setIsPlaying(false);
@@ -580,20 +616,6 @@ const VideoLearning: React.FC = () => {
                     disablePictureInPicture
                     controlsList="nodownload noplaybackrate"
                   />
-
-                  {/* Watermark */}
-                  <div 
-                    className="absolute pointer-events-none select-none z-10 transition-all duration-1000"
-                    style={{ 
-                      left: `${watermarkPosition.x}%`, 
-                      top: `${watermarkPosition.y}%`,
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                  >
-                    <div className="bg-black/50 text-white/70 px-3 py-1 rounded text-sm font-mono">
-                      {user?.email} | {new Date().toLocaleString()}
-                    </div>
-                  </div>
 
                   {/* Custom Controls */}
                   <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity ${showControls ? 'opacity-100' : 'opacity-0'}`}>
@@ -647,9 +669,9 @@ const VideoLearning: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <button onClick={togglePlay} className="text-white hover:text-blue-400">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                        <button onClick={togglePlay} className="text-white hover:text-blue-400" aria-label="Play or pause">
                           {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
                         </button>
                         <button
@@ -669,12 +691,12 @@ const VideoLearning: React.FC = () => {
                           <SkipForward className="w-5 h-5" />
                         </button>
 
-                        <span className="text-xs text-gray-200">
+                        <span className="text-[11px] sm:text-xs text-gray-200 whitespace-nowrap">
                           {formatTime(currentTime)} / {formatTime(duration)}
                         </span>
 
                         <div className="flex items-center gap-2">
-                          <button onClick={toggleMute} className="text-white hover:text-blue-400">
+                          <button onClick={toggleMute} className="text-white hover:text-blue-400" aria-label="Mute or unmute">
                             {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                           </button>
                           <input
@@ -684,38 +706,44 @@ const VideoLearning: React.FC = () => {
                             step="0.1"
                             value={volume}
                             onChange={handleVolumeChange}
-                            className="w-20"
+                            className="w-16 sm:w-20"
                           />
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 relative">
+                      <div
+                        ref={settingsMenuContainerRef}
+                        className="flex items-center gap-2 sm:gap-3 relative self-end sm:self-auto"
+                      >
                         <button
                           type="button"
-                          className="text-white hover:text-blue-400 text-sm"
+                          className="text-white hover:text-blue-400"
+                          aria-label="Settings"
                           onClick={() => setShowSettings((prev) => !prev)}
                         >
-                          Settings
+                          <Settings className="w-5 h-5" />
                         </button>
                         <button
                           type="button"
-                          className="text-white hover:text-blue-400 text-sm"
+                          className="text-white hover:text-blue-400"
+                          aria-label={isTheater ? 'Exit theater mode' : 'Enter theater mode'}
                           onClick={toggleTheater}
                         >
-                          {isTheater ? 'Default' : 'Theater'}
+                          <RectangleHorizontal className="w-5 h-5" />
                         </button>
                         <button
                           type="button"
-                          className="text-white hover:text-blue-400 text-sm"
+                          className="text-white hover:text-blue-400"
+                          aria-label="Picture in picture"
                           onClick={togglePictureInPicture}
                         >
-                          PiP
+                          <PictureInPicture2 className="w-5 h-5" />
                         </button>
-                        <button onClick={toggleFullscreen} className="text-white hover:text-blue-400">
+                        <button onClick={toggleFullscreen} className="text-white hover:text-blue-400" aria-label="Toggle fullscreen">
                           {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
                         </button>
                         {showSettings && (
-                          <div className="absolute right-0 bottom-10 w-40 bg-gray-900 border border-gray-700 rounded-md p-2 text-xs text-white shadow-lg">
+                          <div className="absolute right-0 bottom-10 w-40 bg-gray-900 border border-gray-700 rounded-md p-2 text-xs text-white shadow-lg z-20">
                             <div className="mb-2 text-gray-400">Playback speed</div>
                             {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
                               <button
