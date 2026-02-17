@@ -93,6 +93,10 @@ type PendingQRChange = {
   file: File;
 };
 
+type PendingQRLinkChange = {
+  courseId: string;
+};
+
 const AdminCourses: React.FC = () => {
   const navigate = useNavigate();
   
@@ -103,10 +107,15 @@ const AdminCourses: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showQRPasswordDialog, setShowQRPasswordDialog] = useState(false);
+  const [showQRLinkDialog, setShowQRLinkDialog] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [pendingQRChange, setPendingQRChange] = useState<PendingQRChange | null>(null);
+  const [pendingQRLinkChange, setPendingQRLinkChange] = useState<PendingQRLinkChange | null>(null);
   const [qrChangePassword, setQRChangePassword] = useState('');
   const [qrChangeError, setQRChangeError] = useState('');
+  const [qrLinkValue, setQRLinkValue] = useState('');
+  const [qrLinkPassword, setQRLinkPassword] = useState('');
+  const [qrLinkError, setQRLinkError] = useState('');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -241,6 +250,22 @@ const AdminCourses: React.FC = () => {
     setQRChangeError('');
   };
 
+  const openQRLinkDialog = (courseId: string) => {
+    setPendingQRLinkChange({ courseId });
+    setQRLinkValue('');
+    setQRLinkPassword('');
+    setQRLinkError('');
+    setShowQRLinkDialog(true);
+  };
+
+  const closeQRLinkDialog = () => {
+    setShowQRLinkDialog(false);
+    setPendingQRLinkChange(null);
+    setQRLinkValue('');
+    setQRLinkPassword('');
+    setQRLinkError('');
+  };
+
   const confirmQRChange = async () => {
     if (!pendingQRChange) return;
     if (!qrChangePassword.trim()) {
@@ -268,6 +293,33 @@ const AdminCourses: React.FC = () => {
       } else {
         setQRChangeError('Failed to update QR code.');
       }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const confirmQRLinkChange = async () => {
+    if (!pendingQRLinkChange) return;
+
+    const link = qrLinkValue.trim();
+    if (!link) {
+      setQRLinkError('Please enter a Google Drive image link or Drive file ID.');
+      return;
+    }
+    if (!qrLinkPassword.trim()) {
+      setQRLinkError('Please enter your admin password.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setQRLinkError('');
+
+    try {
+      await courseAPI.setQRCodeLink(pendingQRLinkChange.courseId, link, qrLinkPassword);
+      closeQRLinkDialog();
+      fetchCourses();
+    } catch (error) {
+      setQRLinkError(getApiErrorMessage(error, 'Failed to set QR image link.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -520,23 +572,42 @@ const AdminCourses: React.FC = () => {
                                 }}
                               />
                             </label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-blue-600"
+                            onClick={() => openQRLinkDialog(course._id)}
+                          >
+                            Link
+                          </Button>
                         </div>
                       ) : (
-                        <label className="cursor-pointer">
-                          <Button variant="outline" size="sm">
-                            <QrCode className="w-4 h-4 mr-1" />
-                            Upload
+                        <div className="flex items-center gap-2">
+                          <label className="cursor-pointer">
+                            <Button variant="outline" size="sm">
+                              <QrCode className="w-4 h-4 mr-1" />
+                              Upload
+                            </Button>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) openQRPasswordDialog(course._id, file);
+                              }}
+                            />
+                          </label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openQRLinkDialog(course._id)}
+                          >
+                            Link
                           </Button>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) openQRPasswordDialog(course._id, file);
-                            }}
-                          />
-                        </label>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -782,6 +853,52 @@ const AdminCourses: React.FC = () => {
             <Button onClick={confirmQRChange} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Confirm Change
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Link Dialog */}
+      <Dialog open={showQRLinkDialog} onOpenChange={(open) => !open && closeQRLinkDialog()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set QR Image Link</DialogTitle>
+            <DialogDescription>
+              Add a Google Drive image link (or Drive file ID) for payment QR.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="qrLinkValue">Google Drive Image Link</Label>
+              <Input
+                id="qrLinkValue"
+                type="text"
+                value={qrLinkValue}
+                onChange={(e) => setQRLinkValue(e.target.value)}
+                placeholder="https://drive.google.com/file/d/... or file ID"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="qrLinkPassword">Admin Password</Label>
+              <Input
+                id="qrLinkPassword"
+                type="password"
+                value={qrLinkPassword}
+                onChange={(e) => setQRLinkPassword(e.target.value)}
+                placeholder="Enter your password"
+              />
+            </div>
+            {qrLinkError && (
+              <p className="text-sm text-red-600">{qrLinkError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeQRLinkDialog}>
+              Cancel
+            </Button>
+            <Button onClick={confirmQRLinkChange} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save Link
             </Button>
           </DialogFooter>
         </DialogContent>

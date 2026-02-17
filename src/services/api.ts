@@ -99,6 +99,9 @@ export const courseAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
+
+  setQRCodeLink: (id: string, url: string, adminPassword: string) =>
+    api.put(`/courses/${id}/qr-code-link`, { url, adminPassword }),
   
   uploadThumbnail: (id: string, file: File) => {
     const formData = new FormData();
