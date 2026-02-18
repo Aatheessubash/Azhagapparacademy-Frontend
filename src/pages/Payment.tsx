@@ -122,7 +122,7 @@ const Payment: React.FC = () => {
     setError('');
     const query = buildUpiQueryString(course);
     if (!query) {
-      setError('GPay UPI details are not configured for this course. Please pay using QR code.');
+      setError('GPay quick-pay is not configured for this course. Ask admin to add a UPI ID in Admin → Courses, or pay using the QR code.');
       return;
     }
 
@@ -354,7 +354,7 @@ const Payment: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-xs text-orange-600 text-center">
-                    GPay quick-pay is not configured for this course. Use QR scan below.
+                    GPay quick-pay is not configured for this course. Admin must add a UPI ID in Admin → Courses. Use QR scan below.
                   </p>
                 )}
               </div>

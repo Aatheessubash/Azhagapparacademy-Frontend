@@ -166,6 +166,13 @@ const AdminCourses: React.FC = () => {
       return;
     }
 
+    const trimmedUpiId = formData.paymentUpiId.trim();
+    const trimmedReceiverName = formData.paymentReceiverName.trim();
+    if (!trimmedUpiId && trimmedReceiverName) {
+      setFormError('UPI ID is required when receiver name is provided.');
+      return;
+    }
+
     setIsSubmitting(true);
     setFormError('');
     try {
@@ -193,6 +200,13 @@ const AdminCourses: React.FC = () => {
     if (!selectedCourse) return;
     if (!formData.isFree && formData.price <= 0) {
       alert('Price must be greater than 0 for paid courses, or mark as Free.');
+      return;
+    }
+
+    const trimmedUpiId = formData.paymentUpiId.trim();
+    const trimmedReceiverName = formData.paymentReceiverName.trim();
+    if (!trimmedUpiId && trimmedReceiverName) {
+      setFormError('UPI ID is required when receiver name is provided.');
       return;
     }
 
@@ -685,7 +699,7 @@ const AdminCourses: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, paymentUpiId: e.target.value })}
               />
               <p className="text-xs text-gray-500">
-                Used for one-tap GPay open on the payment page.
+                Format: username@bank (example: example@okaxis). Leave blank to disable “Open in GPay” (QR scan still works).
               </p>
             </div>
             <div className="space-y-2">
@@ -696,6 +710,9 @@ const AdminCourses: React.FC = () => {
                 value={formData.paymentReceiverName}
                 onChange={(e) => setFormData({ ...formData, paymentReceiverName: e.target.value })}
               />
+              <p className="text-xs text-gray-500">
+                Shown in the payment app (optional). Requires a UPI ID.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="price">Price (INR)</Label>
@@ -805,6 +822,9 @@ const AdminCourses: React.FC = () => {
                 value={formData.paymentUpiId}
                 onChange={(e) => setFormData({ ...formData, paymentUpiId: e.target.value })}
               />
+              <p className="text-xs text-gray-500">
+                Format: username@bank (example: example@okaxis). Leave blank to disable “Open in GPay” (QR scan still works).
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-paymentReceiverName">Receiver Name (Optional)</Label>
@@ -814,6 +834,9 @@ const AdminCourses: React.FC = () => {
                 value={formData.paymentReceiverName}
                 onChange={(e) => setFormData({ ...formData, paymentReceiverName: e.target.value })}
               />
+              <p className="text-xs text-gray-500">
+                Shown in the payment app (optional). Requires a UPI ID.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-price">Price (INR)</Label>
