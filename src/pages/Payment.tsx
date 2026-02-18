@@ -38,6 +38,8 @@ interface Course {
   paymentReceiverName?: string;
 }
 
+const DEFAULT_UPI_ID = '772-2@oksbi';
+
 const Payment: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -88,7 +90,7 @@ const Payment: React.FC = () => {
   }, [previewUrl]);
 
   const buildUpiQueryString = useCallback((selectedCourse: Course | null) => {
-    const upiId = selectedCourse?.paymentUpiId?.trim();
+    const upiId = (selectedCourse?.paymentUpiId?.trim() || DEFAULT_UPI_ID).trim();
     const amount = Number(selectedCourse?.price);
 
     if (!selectedCourse || !upiId || !Number.isFinite(amount) || amount <= 0) {
@@ -111,7 +113,7 @@ const Payment: React.FC = () => {
   }, []);
 
   const copyUpiId = () => {
-    const upiId = course?.paymentUpiId?.trim();
+    const upiId = (course?.paymentUpiId?.trim() || DEFAULT_UPI_ID).trim();
     if (!upiId) return;
     navigator.clipboard.writeText(upiId);
     setCopiedUpiId(true);
@@ -122,7 +124,7 @@ const Payment: React.FC = () => {
     setError('');
     const query = buildUpiQueryString(course);
     if (!query) {
-      setError('GPay quick-pay is not configured for this course. Ask admin to add a UPI ID in Admin → Courses, or pay using the QR code.');
+      setError('Unable to open GPay for this course. Please pay using the QR code.');
       return;
     }
 
@@ -317,7 +319,7 @@ const Payment: React.FC = () => {
                 <Button
                   type="button"
                   className="w-full h-11 bg-emerald-600 hover:bg-emerald-700"
-                  disabled={isLaunchingUpi || !course?.paymentUpiId}
+                  disabled={isLaunchingUpi || !course || !Number.isFinite(Number(course?.price)) || Number(course?.price) <= 0}
                   onClick={openGPay}
                 >
                   {isLaunchingUpi ? (
@@ -332,11 +334,11 @@ const Payment: React.FC = () => {
                     </>
                   )}
                 </Button>
-                {course?.paymentUpiId ? (
+                {course ? (
                   <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 bg-white">
                     <div className="min-w-0">
                       <p className="text-xs text-gray-500">UPI ID</p>
-                      <p className="text-sm font-medium truncate">{course.paymentUpiId}</p>
+                      <p className="text-sm font-medium truncate">{course.paymentUpiId?.trim() || DEFAULT_UPI_ID}</p>
                     </div>
                     <Button type="button" variant="outline" size="sm" onClick={copyUpiId}>
                       {copiedUpiId ? (
@@ -354,7 +356,7 @@ const Payment: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-xs text-orange-600 text-center">
-                    GPay quick-pay is not configured for this course. Admin must add a UPI ID in Admin → Courses. Use QR scan below.
+                    Loading payment details...
                   </p>
                 )}
               </div>

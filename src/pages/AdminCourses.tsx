@@ -132,7 +132,7 @@ const AdminCourses: React.FC = () => {
     quizEnabled: false,
     status: 'published',
     youtubeEmbedUrl: '',
-    paymentUpiId: '',
+    paymentUpiId: '772-2@oksbi',
     paymentReceiverName: ''
   });
 
@@ -379,7 +379,7 @@ const AdminCourses: React.FC = () => {
       quizEnabled: false,
       status: 'published',
       youtubeEmbedUrl: '',
-      paymentUpiId: '',
+      paymentUpiId: '772-2@oksbi',
       paymentReceiverName: ''
     });
   };
@@ -395,7 +395,7 @@ const AdminCourses: React.FC = () => {
       quizEnabled: course.quizEnabled,
       status: course.status,
       youtubeEmbedUrl: course.youtubeEmbedUrl || '',
-      paymentUpiId: course.paymentUpiId || '',
+      paymentUpiId: course.paymentUpiId || '772-2@oksbi',
       paymentReceiverName: course.paymentReceiverName || ''
     });
     setShowEditDialog(true);
