@@ -24,7 +24,8 @@ import {
   CreditCard,
   Loader2,
   Copy,
-  Check
+  Check,
+  Smartphone
 } from 'lucide-react';
 
 interface Course {
@@ -33,6 +34,8 @@ interface Course {
   price: number;
   isFree: boolean;
   qrCodeImage?: string;
+  paymentUpiId?: string;
+  paymentReceiverName?: string;
 }
 
 const Payment: React.FC = () => {
@@ -48,6 +51,8 @@ const Payment: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedUpiId, setCopiedUpiId] = useState(false);
+  const [isLaunchingUpi, setIsLaunchingUpi] = useState(false);
 
   const fetchCourse = useCallback(async () => {
     if (!courseId) return;
@@ -74,6 +79,74 @@ const Payment: React.FC = () => {
     fetchCourse();
   }, [fetchCourse]);
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const buildUpiQueryString = useCallback((selectedCourse: Course | null) => {
+    const upiId = selectedCourse?.paymentUpiId?.trim();
+    const amount = Number(selectedCourse?.price);
+
+    if (!selectedCourse || !upiId || !Number.isFinite(amount) || amount <= 0) {
+      return null;
+    }
+
+    const params = new URLSearchParams({
+      pa: upiId,
+      am: amount.toFixed(2),
+      cu: 'INR',
+      tn: `${selectedCourse.title} course payment`
+    });
+
+    const receiverName = selectedCourse.paymentReceiverName?.trim();
+    if (receiverName) {
+      params.set('pn', receiverName);
+    }
+
+    return params.toString();
+  }, []);
+
+  const copyUpiId = () => {
+    const upiId = course?.paymentUpiId?.trim();
+    if (!upiId) return;
+    navigator.clipboard.writeText(upiId);
+    setCopiedUpiId(true);
+    setTimeout(() => setCopiedUpiId(false), 2000);
+  };
+
+  const openGPay = () => {
+    setError('');
+    const query = buildUpiQueryString(course);
+    if (!query) {
+      setError('GPay UPI details are not configured for this course. Please pay using QR code.');
+      return;
+    }
+
+    const gpayDeepLink = `tez://upi/pay?${query}`;
+    const fallbackUpiDeepLink = `upi://pay?${query}`;
+    const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    setIsLaunchingUpi(true);
+
+    if (isMobile) {
+      window.location.href = gpayDeepLink;
+      window.setTimeout(() => {
+        window.location.href = fallbackUpiDeepLink;
+        setIsLaunchingUpi(false);
+      }, 900);
+      return;
+    }
+
+    window.location.href = fallbackUpiDeepLink;
+    window.setTimeout(() => {
+      setIsLaunchingUpi(false);
+    }, 900);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -88,6 +161,9 @@ const Payment: React.FC = () => {
       }
 
       setProofImage(file);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
       setPreviewUrl(URL.createObjectURL(file));
       setError('');
     }
@@ -237,6 +313,52 @@ const Payment: React.FC = () => {
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  className="w-full h-11 bg-emerald-600 hover:bg-emerald-700"
+                  disabled={isLaunchingUpi || !course?.paymentUpiId}
+                  onClick={openGPay}
+                >
+                  {isLaunchingUpi ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Opening GPay...
+                    </>
+                  ) : (
+                    <>
+                      <Smartphone className="w-4 h-4 mr-2" />
+                      Open in GPay
+                    </>
+                  )}
+                </Button>
+                {course?.paymentUpiId ? (
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 bg-white">
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500">UPI ID</p>
+                      <p className="text-sm font-medium truncate">{course.paymentUpiId}</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={copyUpiId}>
+                      {copiedUpiId ? (
+                        <>
+                          <Check className="w-4 h-4 mr-1 text-green-600" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-1" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-orange-600 text-center">
+                    GPay quick-pay is not configured for this course. Use QR scan below.
+                  </p>
+                )}
+              </div>
+
               <div className="text-sm text-gray-500 text-center">
                 <p>Scan the QR code with your payment app</p>
                 <p className="mt-1">After payment, enter the transaction ID below</p>
@@ -298,6 +420,9 @@ const Payment: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
+                            if (previewUrl) {
+                              URL.revokeObjectURL(previewUrl);
+                            }
                             setProofImage(null);
                             setPreviewUrl(null);
                           }}

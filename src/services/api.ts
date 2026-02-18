@@ -82,7 +82,15 @@ export const courseAPI = {
   getById: (id: string) =>
     api.get(`/courses/${id}`),
   
-  create: (data: { title: string; description: string; price: number; quizEnabled?: boolean; youtubeEmbedUrl?: string }) =>
+  create: (data: {
+    title: string;
+    description: string;
+    price: number;
+    quizEnabled?: boolean;
+    youtubeEmbedUrl?: string;
+    paymentUpiId?: string | null;
+    paymentReceiverName?: string | null;
+  }) =>
     api.post('/courses', data),
   
   update: (id: string, data: ApiPayload) =>

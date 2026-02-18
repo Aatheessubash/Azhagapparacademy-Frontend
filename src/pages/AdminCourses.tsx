@@ -66,6 +66,8 @@ interface Course {
   thumbnail?: string;
   qrCodeImage?: string;
   youtubeEmbedUrl?: string;
+  paymentUpiId?: string;
+  paymentReceiverName?: string;
   totalLevels: number;
 }
 
@@ -77,6 +79,8 @@ type CourseForm = {
   quizEnabled: boolean;
   status: 'draft' | 'published' | 'archived';
   youtubeEmbedUrl: string;
+  paymentUpiId: string;
+  paymentReceiverName: string;
 };
 
 type ApiErrorResponse = {
@@ -127,7 +131,9 @@ const AdminCourses: React.FC = () => {
     isFree: false,
     quizEnabled: false,
     status: 'published',
-    youtubeEmbedUrl: ''
+    youtubeEmbedUrl: '',
+    paymentUpiId: '',
+    paymentReceiverName: ''
   });
 
   useEffect(() => {
@@ -167,7 +173,9 @@ const AdminCourses: React.FC = () => {
         ...formData,
         title: formData.title.trim(),
         description: formData.description.trim(),
-        price: formData.isFree ? 0 : formData.price
+        price: formData.isFree ? 0 : formData.price,
+        paymentUpiId: formData.paymentUpiId.trim() || null,
+        paymentReceiverName: formData.paymentReceiverName.trim() || null
       };
       await courseAPI.create(payload);
       setShowCreateDialog(false);
@@ -195,7 +203,9 @@ const AdminCourses: React.FC = () => {
         ...formData,
         title: formData.title.trim(),
         description: formData.description.trim(),
-        price: formData.isFree ? 0 : formData.price
+        price: formData.isFree ? 0 : formData.price,
+        paymentUpiId: formData.paymentUpiId.trim() || null,
+        paymentReceiverName: formData.paymentReceiverName.trim() || null
       };
       await courseAPI.update(selectedCourse._id, payload);
       setShowEditDialog(false);
@@ -354,7 +364,9 @@ const AdminCourses: React.FC = () => {
       isFree: false,
       quizEnabled: false,
       status: 'published',
-      youtubeEmbedUrl: ''
+      youtubeEmbedUrl: '',
+      paymentUpiId: '',
+      paymentReceiverName: ''
     });
   };
 
@@ -368,7 +380,9 @@ const AdminCourses: React.FC = () => {
       isFree: course.isFree,
       quizEnabled: course.quizEnabled,
       status: course.status,
-      youtubeEmbedUrl: course.youtubeEmbedUrl || ''
+      youtubeEmbedUrl: course.youtubeEmbedUrl || '',
+      paymentUpiId: course.paymentUpiId || '',
+      paymentReceiverName: course.paymentReceiverName || ''
     });
     setShowEditDialog(true);
   };
@@ -541,6 +555,9 @@ const AdminCourses: React.FC = () => {
                       {course.youtubeEmbedUrl && (
                         <Badge variant="outline" className="text-xs">YouTube</Badge>
                       )}
+                      {course.paymentUpiId && (
+                        <Badge variant="outline" className="text-xs">UPI Ready</Badge>
+                      )}
                     </div>
                   </div>
 
@@ -659,33 +676,54 @@ const AdminCourses: React.FC = () => {
                 Supports YouTube watch, share, or embed links.
               </p>
             </div>
-          <div className="space-y-2">
-            <Label htmlFor="price">Price (INR)</Label>
-            <div className="flex items-center gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="paymentUpiId">GPay/UPI ID (Optional)</Label>
               <Input
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.price}
-                disabled={formData.isFree}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                id="paymentUpiId"
+                placeholder="example@okaxis"
+                value={formData.paymentUpiId}
+                onChange={(e) => setFormData({ ...formData, paymentUpiId: e.target.value })}
               />
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="isFree"
-                  checked={formData.isFree}
-                  onCheckedChange={(checked) => setFormData({
-                    ...formData,
-                    isFree: checked,
-                    price: checked ? 0 : formData.price
-                  })}
+              <p className="text-xs text-gray-500">
+                Used for one-tap GPay open on the payment page.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="paymentReceiverName">Receiver Name (Optional)</Label>
+              <Input
+                id="paymentReceiverName"
+                placeholder="Azhagappar Academy"
+                value={formData.paymentReceiverName}
+                onChange={(e) => setFormData({ ...formData, paymentReceiverName: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="price">Price (INR)</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.price}
+                  disabled={formData.isFree}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                 />
-                <Label htmlFor="isFree">Free course</Label>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="isFree"
+                    checked={formData.isFree}
+                    onCheckedChange={(checked) => setFormData({
+                      ...formData,
+                      isFree: checked,
+                      price: checked ? 0 : formData.price
+                    })}
+                  />
+                  <Label htmlFor="isFree">Free course</Label>
+                </div>
               </div>
             </div>
-          </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="quizEnabled">Enable Quizzes</Label>
               <Switch
@@ -758,6 +796,24 @@ const AdminCourses: React.FC = () => {
               <p className="text-xs text-gray-500">
                 Supports YouTube watch, share, or embed links.
               </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-paymentUpiId">GPay/UPI ID (Optional)</Label>
+              <Input
+                id="edit-paymentUpiId"
+                placeholder="example@okaxis"
+                value={formData.paymentUpiId}
+                onChange={(e) => setFormData({ ...formData, paymentUpiId: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-paymentReceiverName">Receiver Name (Optional)</Label>
+              <Input
+                id="edit-paymentReceiverName"
+                placeholder="Azhagappar Academy"
+                value={formData.paymentReceiverName}
+                onChange={(e) => setFormData({ ...formData, paymentReceiverName: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-price">Price (INR)</Label>
