@@ -651,14 +651,14 @@ const AdminCourses: React.FC = () => {
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="w-[95vw] sm:w-full sm:max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:w-full sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Create New Course</DialogTitle>
             <DialogDescription>
               Add a new course to your platform
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="title">Course Title</Label>
               <Input
@@ -766,7 +766,7 @@ const AdminCourses: React.FC = () => {
               <p className="text-sm text-red-600">{formError}</p>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
               Cancel
             </Button>
@@ -780,11 +780,11 @@ const AdminCourses: React.FC = () => {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="w-[95vw] sm:w-full sm:max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:w-full sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Edit Course</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="edit-title">Course Title</Label>
               <Input
@@ -889,7 +889,7 @@ const AdminCourses: React.FC = () => {
               <p className="text-sm text-red-600">{formError}</p>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               Cancel
             </Button>
