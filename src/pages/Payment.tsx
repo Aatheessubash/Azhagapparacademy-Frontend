@@ -38,8 +38,6 @@ interface Course {
   paymentReceiverName?: string;
 }
 
-const DEFAULT_UPI_ID = '772-2@oksbi';
-
 const Payment: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -90,30 +88,40 @@ const Payment: React.FC = () => {
   }, [previewUrl]);
 
   const buildUpiQueryString = useCallback((selectedCourse: Course | null) => {
-    const upiId = (selectedCourse?.paymentUpiId?.trim() || DEFAULT_UPI_ID).trim();
+    const upiId = selectedCourse?.paymentUpiId?.trim();
     const amount = Number(selectedCourse?.price);
 
     if (!selectedCourse || !upiId || !Number.isFinite(amount) || amount <= 0) {
       return null;
     }
 
+    // Keep up to 2 decimals, but avoid sending unnecessary trailing ".00" in UPI deep links.
+    const roundedAmount = Math.round(amount * 100) / 100;
+    const upiAmount =
+      Number.isInteger(roundedAmount)
+        ? roundedAmount.toString()
+        : roundedAmount.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+
+    const payeeName =
+      selectedCourse.paymentReceiverName?.trim() ||
+      selectedCourse.title?.trim() ||
+      'Course Payment';
+    const safePayeeName = payeeName.slice(0, 60);
+
     const params = new URLSearchParams({
       pa: upiId,
-      am: amount.toFixed(2),
+      pn: safePayeeName,
+      am: upiAmount,
       cu: 'INR',
-      tn: `${selectedCourse.title} course payment`
+      tn: 'Course payment',
+      tr: `CRS${Date.now()}`
     });
-
-    const receiverName = selectedCourse.paymentReceiverName?.trim();
-    if (receiverName) {
-      params.set('pn', receiverName);
-    }
 
     return params.toString();
   }, []);
 
   const copyUpiId = () => {
-    const upiId = (course?.paymentUpiId?.trim() || DEFAULT_UPI_ID).trim();
+    const upiId = course?.paymentUpiId?.trim();
     if (!upiId) return;
     navigator.clipboard.writeText(upiId);
     setCopiedUpiId(true);
@@ -124,29 +132,53 @@ const Payment: React.FC = () => {
     setError('');
     const query = buildUpiQueryString(course);
     if (!query) {
-      setError('Unable to open GPay for this course. Please pay using the QR code.');
+      setError('GPay UPI details are not configured correctly. Please scan the QR code to pay.');
       return;
     }
 
-    const gpayDeepLink = `tez://upi/pay?${query}`;
-    const fallbackUpiDeepLink = `upi://pay?${query}`;
+    const upiLink = `upi://pay?${query}`;
+    const gpayLink = `gpay://upi/pay?${query}`;
+    const androidIntentLink =
+      `intent://upi/pay?${query}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
+
     const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
     setIsLaunchingUpi(true);
 
-    if (isMobile) {
-      window.location.href = gpayDeepLink;
+    if (isAndroid) {
+      window.location.href = androidIntentLink;
       window.setTimeout(() => {
-        window.location.href = fallbackUpiDeepLink;
         setIsLaunchingUpi(false);
-      }, 900);
+      }, 1500);
       return;
     }
 
-    window.location.href = fallbackUpiDeepLink;
+    if (isIOS) {
+      window.location.href = gpayLink;
+      window.setTimeout(() => {
+        // Fallback only if app did not take focus.
+        if (!document.hidden) {
+          window.location.href = upiLink;
+        }
+        setIsLaunchingUpi(false);
+      }, 1200);
+      return;
+    }
+
+    if (isMobile) {
+      window.location.href = upiLink;
+      window.setTimeout(() => {
+        setIsLaunchingUpi(false);
+      }, 1200);
+      return;
+    }
+
+    window.location.href = upiLink;
     window.setTimeout(() => {
       setIsLaunchingUpi(false);
-    }, 900);
+    }, 1000);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,7 +351,12 @@ const Payment: React.FC = () => {
                 <Button
                   type="button"
                   className="w-full h-11 bg-emerald-600 hover:bg-emerald-700"
-                  disabled={isLaunchingUpi || !course || !Number.isFinite(Number(course?.price)) || Number(course?.price) <= 0}
+                  disabled={
+                    isLaunchingUpi ||
+                    !course?.paymentUpiId ||
+                    !Number.isFinite(Number(course?.price)) ||
+                    Number(course?.price) <= 0
+                  }
                   onClick={openGPay}
                 >
                   {isLaunchingUpi ? (
@@ -334,11 +371,11 @@ const Payment: React.FC = () => {
                     </>
                   )}
                 </Button>
-                {course ? (
+                {course?.paymentUpiId ? (
                   <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 bg-white">
                     <div className="min-w-0">
                       <p className="text-xs text-gray-500">UPI ID</p>
-                      <p className="text-sm font-medium truncate">{course.paymentUpiId?.trim() || DEFAULT_UPI_ID}</p>
+                      <p className="text-sm font-medium truncate">{course.paymentUpiId.trim()}</p>
                     </div>
                     <Button type="button" variant="outline" size="sm" onClick={copyUpiId}>
                       {copiedUpiId ? (
@@ -355,8 +392,8 @@ const Payment: React.FC = () => {
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-xs text-orange-600 text-center">
-                    Loading payment details...
+                  <p className="text-xs text-orange-600 text-center font-medium">
+                    UPI ID is not configured for this course. Please pay by scanning QR code.
                   </p>
                 )}
               </div>
