@@ -148,13 +148,31 @@ const Payment: React.FC = () => {
     const isAndroid = /android/i.test(navigator.userAgent);
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
+    if (!isMobile) {
+      setError('UPI app launch works only on mobile devices. Open this page on your phone or use QR scan.');
+      return;
+    }
+
     setIsLaunchingUpi(true);
+    const showNoUpiHandlerError = () => {
+      setError('No UPI app was detected on this device. Install GPay/PhonePe/Paytm or pay using QR scan.');
+    };
 
     if (isAndroid) {
       window.location.href = androidIntentLink;
       window.setTimeout(() => {
+        if (!document.hidden) {
+          window.location.href = upiLink;
+          window.setTimeout(() => {
+            if (!document.hidden) {
+              showNoUpiHandlerError();
+            }
+            setIsLaunchingUpi(false);
+          }, 1000);
+          return;
+        }
         setIsLaunchingUpi(false);
-      }, 1500);
+      }, 900);
       return;
     }
 
@@ -164,24 +182,26 @@ const Payment: React.FC = () => {
         // Fallback only if app did not take focus.
         if (!document.hidden) {
           window.location.href = upiLink;
+          window.setTimeout(() => {
+            if (!document.hidden) {
+              showNoUpiHandlerError();
+            }
+            setIsLaunchingUpi(false);
+          }, 1000);
+          return;
         }
         setIsLaunchingUpi(false);
-      }, 1200);
-      return;
-    }
-
-    if (isMobile) {
-      window.location.href = upiLink;
-      window.setTimeout(() => {
-        setIsLaunchingUpi(false);
-      }, 1200);
+      }, 1000);
       return;
     }
 
     window.location.href = upiLink;
     window.setTimeout(() => {
+      if (!document.hidden) {
+        showNoUpiHandlerError();
+      }
       setIsLaunchingUpi(false);
-    }, 1000);
+    }, 1200);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
