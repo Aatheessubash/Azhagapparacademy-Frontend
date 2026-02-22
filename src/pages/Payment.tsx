@@ -107,17 +107,20 @@ const Payment: React.FC = () => {
       selectedCourse.title?.trim() ||
       'Course Payment';
     const safePayeeName = payeeName.slice(0, 60);
+    const note = `${selectedCourse.title} course payment`.trim().slice(0, 80) || 'Course payment';
 
-    const params = new URLSearchParams({
-      pa: upiId,
-      pn: safePayeeName,
-      am: upiAmount,
-      cu: 'INR',
-      tn: 'Course payment',
-      tr: `CRS${Date.now()}`
-    });
+    // Build URI manually so spaces are encoded as %20 (not +), which some UPI handlers show better.
+    const params: Array<[string, string]> = [
+      ['pa', upiId],
+      ['pn', safePayeeName],
+      ['am', upiAmount],
+      ['cu', 'INR'],
+      ['tn', note]
+    ];
 
-    return params.toString();
+    return params
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .join('&');
   }, []);
 
   const copyUpiId = () => {
