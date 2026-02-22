@@ -24,8 +24,7 @@ import {
   CreditCard,
   Loader2,
   Copy,
-  Check,
-  Smartphone
+  Check
 } from 'lucide-react';
 
 interface Course {
@@ -34,8 +33,6 @@ interface Course {
   price: number;
   isFree: boolean;
   qrCodeImage?: string;
-  paymentUpiId?: string;
-  paymentReceiverName?: string;
 }
 
 const Payment: React.FC = () => {
@@ -51,8 +48,6 @@ const Payment: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [copiedUpiId, setCopiedUpiId] = useState(false);
-  const [isLaunchingUpi, setIsLaunchingUpi] = useState(false);
 
   const fetchCourse = useCallback(async () => {
     if (!courseId) return;
@@ -86,123 +81,6 @@ const Payment: React.FC = () => {
       }
     };
   }, [previewUrl]);
-
-  const buildUpiQueryString = useCallback((selectedCourse: Course | null) => {
-    const upiId = selectedCourse?.paymentUpiId?.trim();
-    const amount = Number(selectedCourse?.price);
-
-    if (!selectedCourse || !upiId || !Number.isFinite(amount) || amount <= 0) {
-      return null;
-    }
-
-    // Keep up to 2 decimals, but avoid sending unnecessary trailing ".00" in UPI deep links.
-    const roundedAmount = Math.round(amount * 100) / 100;
-    const upiAmount =
-      Number.isInteger(roundedAmount)
-        ? roundedAmount.toString()
-        : roundedAmount.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
-
-    const payeeName =
-      selectedCourse.paymentReceiverName?.trim() ||
-      selectedCourse.title?.trim() ||
-      'Course Payment';
-    const safePayeeName = payeeName.slice(0, 60);
-    const note = `${selectedCourse.title} course payment`.trim().slice(0, 80) || 'Course payment';
-
-    // Build URI manually so spaces are encoded as %20 (not +), which some UPI handlers show better.
-    const params: Array<[string, string]> = [
-      ['pa', upiId],
-      ['pn', safePayeeName],
-      ['am', upiAmount],
-      ['cu', 'INR'],
-      ['tn', note]
-    ];
-
-    return params
-      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-      .join('&');
-  }, []);
-
-  const copyUpiId = () => {
-    const upiId = course?.paymentUpiId?.trim();
-    if (!upiId) return;
-    navigator.clipboard.writeText(upiId);
-    setCopiedUpiId(true);
-    setTimeout(() => setCopiedUpiId(false), 2000);
-  };
-
-  const openGPay = () => {
-    setError('');
-    const query = buildUpiQueryString(course);
-    if (!query) {
-      setError('GPay UPI details are not configured correctly. Please scan the QR code to pay.');
-      return;
-    }
-
-    const upiLink = `upi://pay?${query}`;
-    const gpayLink = `gpay://upi/pay?${query}`;
-    const androidIntentLink =
-      `intent://upi/pay?${query}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
-
-    const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isAndroid = /android/i.test(navigator.userAgent);
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-    if (!isMobile) {
-      setError('UPI app launch works only on mobile devices. Open this page on your phone or use QR scan.');
-      return;
-    }
-
-    setIsLaunchingUpi(true);
-    const showNoUpiHandlerError = () => {
-      setError('No UPI app was detected on this device. Install GPay/PhonePe/Paytm or pay using QR scan.');
-    };
-
-    if (isAndroid) {
-      window.location.href = androidIntentLink;
-      window.setTimeout(() => {
-        if (!document.hidden) {
-          window.location.href = upiLink;
-          window.setTimeout(() => {
-            if (!document.hidden) {
-              showNoUpiHandlerError();
-            }
-            setIsLaunchingUpi(false);
-          }, 1000);
-          return;
-        }
-        setIsLaunchingUpi(false);
-      }, 900);
-      return;
-    }
-
-    if (isIOS) {
-      window.location.href = gpayLink;
-      window.setTimeout(() => {
-        // Fallback only if app did not take focus.
-        if (!document.hidden) {
-          window.location.href = upiLink;
-          window.setTimeout(() => {
-            if (!document.hidden) {
-              showNoUpiHandlerError();
-            }
-            setIsLaunchingUpi(false);
-          }, 1000);
-          return;
-        }
-        setIsLaunchingUpi(false);
-      }, 1000);
-      return;
-    }
-
-    window.location.href = upiLink;
-    window.setTimeout(() => {
-      if (!document.hidden) {
-        showNoUpiHandlerError();
-      }
-      setIsLaunchingUpi(false);
-    }, 1200);
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -368,57 +246,6 @@ const Payment: React.FC = () => {
                   <span className="text-gray-600">Amount to Pay</span>
                   <span className="text-2xl font-bold text-green-600">{formatINR(course?.price)}</span>
                 </div>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  className="w-full h-11 bg-emerald-600 hover:bg-emerald-700"
-                  disabled={
-                    isLaunchingUpi ||
-                    !course?.paymentUpiId ||
-                    !Number.isFinite(Number(course?.price)) ||
-                    Number(course?.price) <= 0
-                  }
-                  onClick={openGPay}
-                >
-                  {isLaunchingUpi ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Opening GPay...
-                    </>
-                  ) : (
-                    <>
-                      <Smartphone className="w-4 h-4 mr-2" />
-                      Open in GPay
-                    </>
-                  )}
-                </Button>
-                {course?.paymentUpiId ? (
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 bg-white">
-                    <div className="min-w-0">
-                      <p className="text-xs text-gray-500">UPI ID</p>
-                      <p className="text-sm font-medium truncate">{course.paymentUpiId.trim()}</p>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" onClick={copyUpiId}>
-                      {copiedUpiId ? (
-                        <>
-                          <Check className="w-4 h-4 mr-1 text-green-600" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4 mr-1" />
-                          Copy
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-orange-600 text-center font-medium">
-                    UPI ID is not configured for this course. Please pay by scanning QR code.
-                  </p>
-                )}
               </div>
 
               <div className="text-sm text-gray-500 text-center">
